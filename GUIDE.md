@@ -19,6 +19,7 @@
 invest/
 ├── README.md
 ├── GUIDE.md
+├── VERSION
 ├── SOUL.md
 ├── WORKFLOW.md
 ├── USER_PROFILE.md
@@ -65,19 +66,35 @@ bash scripts/install_lobster_assistant.sh
 $CODEX_HOME/skills/lobster-invest/
 ```
 
+每次安装都会记录本地版本：
+
+```text
+$CODEX_HOME/skills/lobster-invest/VERSION
+$CODEX_HOME/skills/lobster-invest/INSTALL_STATE.md
+```
+
+`INSTALL_STATE.md` 包含：
+
+- 当前配置版本号。
+- 安装时间。
+- 源仓库地址。
+- 当前 git commit。
+- 本地安装目录。
+
 ## 4. 小龙虾启动顺序
 
 小龙虾读取本仓库时，按以下顺序加载：
 
 1. `README.md`：了解仓库用途。
-2. `SOUL.md`：加载底线规则和角色人格。
-3. `WORKFLOW.md`：加载任务路由和工作流程。
-4. `SKILLS_INDEX.md`：判断用户任务应该使用哪个 Skill。
-5. 具体任务 Skill：
+2. `VERSION`：确认当前配置版本。
+3. `SOUL.md`：加载底线规则和角色人格。
+4. `WORKFLOW.md`：加载任务路由和工作流程。
+5. `SKILLS_INDEX.md`：判断用户任务应该使用哪个 Skill。
+6. 具体任务 Skill：
    - 财经要闻：`skills/a-share-market-news/SKILL.md`
    - 个股分析：`skills/a-share-stock-analysis/SKILL.md`
    - 个股推荐：`skills/a-share-stock-recommendation/SKILL.md`
-6. 自我迭代：
+7. 自我迭代：
    - 总机制：`self-improvement/SELF_IMPROVEMENT.md`
    - 三角色：`TASK_RUNNER_PROMPT.md`、`INDEPENDENT_REVIEW_PROMPT.md`、`OPTIMIZATION_ADVISOR_PROMPT.md`
 
@@ -178,4 +195,3 @@ skills/a-share-stock-recommendation/SKILL.md
 - 高时效信息必须联网核验。
 - 来源不足时少说或不说。
 - 个股相关输出必须包含风险和逻辑失效条件。
-

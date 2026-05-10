@@ -16,6 +16,7 @@ lobster-invest-assistant-kit
 
 Root docs:
 
+- `VERSION`
 - `README.md`
 - `GUIDE.md`
 - `SOUL.md`
@@ -46,4 +47,3 @@ Self improvement:
 Scripts:
 
 - `scripts/install_lobster_assistant.sh`
-

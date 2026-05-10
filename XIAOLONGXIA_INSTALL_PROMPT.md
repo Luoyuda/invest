@@ -7,6 +7,7 @@
 ## 执行步骤
 
 1. 确认当前仓库根目录包含：
+   - `VERSION`
    - `SOUL.md`
    - `WORKFLOW.md`
    - `SKILLS_INDEX.md`
@@ -31,6 +32,12 @@ bash scripts/install_lobster_assistant.sh
 find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 3 -type f | sort
 ```
 
+同时检查本地版本记录：
+
+```bash
+cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
+```
+
 5. 确认以下 Skill 已安装：
    - `a-share-market-news`
    - `a-share-stock-analysis`
@@ -52,6 +59,7 @@ find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 3 -type f | s
 - 安装目录：
 - 已安装 Skill：
 - 已安装自我迭代文件：
+- 本地版本记录：
 - 是否缺失文件：
 - 下一步建议：
 ```
@@ -61,4 +69,3 @@ find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 3 -type f | s
 - 不要修改金融安全边界。
 - 不要删除来源准确、不喊单、不承诺收益、风险提示等规则。
 - 如果安装失败，先报告具体缺失文件或权限问题。
-

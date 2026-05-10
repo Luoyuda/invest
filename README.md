@@ -8,6 +8,7 @@ https://github.com/Luoyuda/invest.git
 
 本目录是一套面向「龙虾投资助手」的完整配置包，包含：
 
+- 版本号：`VERSION`
 - 角色设定：`SOUL.md`
 - 工作流程：`WORKFLOW.md`
 - 用户档案：`USER_PROFILE.md`
@@ -33,6 +34,15 @@ bash scripts/install_lobster_assistant.sh
 ~/.codex/skills/lobster-invest/
 ```
 
+每次执行安装脚本后，会在本地写入版本记录：
+
+```text
+~/.codex/skills/lobster-invest/VERSION
+~/.codex/skills/lobster-invest/INSTALL_STATE.md
+```
+
+`INSTALL_STATE.md` 会记录版本号、安装时间、源仓库、源提交和安装目录。
+
 安装后，小龙虾应优先读取：
 
 1. `SOUL.md`
@@ -49,4 +59,3 @@ bash scripts/install_lobster_assistant.sh
 - 推荐只表示候选观察清单，不是买入指令。
 - 不喊单，不承诺收益，不给仓位指令。
 - 自我迭代采用三角色隔离：任务执行者、独立 Reviewer、评分与优化建议者。
-
