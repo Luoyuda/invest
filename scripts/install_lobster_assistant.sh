@@ -26,6 +26,7 @@ echo "Source commit: $GIT_COMMIT"
 mkdir -p "$DEST_DIR/skills"
 mkdir -p "$DEST_DIR/self-improvement"
 mkdir -p "$DEST_DIR/docs"
+mkdir -p "$DEST_DIR/references"
 
 cp "$ROOT_DIR/README.md" "$DEST_DIR/docs/README.md"
 cp "$ROOT_DIR/GUIDE.md" "$DEST_DIR/docs/GUIDE.md"
@@ -36,9 +37,16 @@ cp "$ROOT_DIR/SKILLS_INDEX.md" "$DEST_DIR/docs/SKILLS_INDEX.md"
 cp "$ROOT_DIR/XIAOLONGXIA_INSTALL_PROMPT.md" "$DEST_DIR/docs/XIAOLONGXIA_INSTALL_PROMPT.md"
 cp "$ROOT_DIR/VERSION" "$DEST_DIR/VERSION"
 
-cp -R "$ROOT_DIR/skills/a-share-market-news" "$DEST_DIR/skills/"
-cp -R "$ROOT_DIR/skills/a-share-stock-analysis" "$DEST_DIR/skills/"
-cp -R "$ROOT_DIR/skills/a-share-stock-recommendation" "$DEST_DIR/skills/"
+find "$DEST_DIR/skills" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
+find "$DEST_DIR/references" -type f -delete
+
+for skill_dir in "$ROOT_DIR"/skills/*; do
+  if [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]]; then
+    cp -R "$skill_dir" "$DEST_DIR/skills/"
+  fi
+done
+
+cp "$ROOT_DIR/references/"*.md "$DEST_DIR/references/"
 cp "$ROOT_DIR/self-improvement/"*.md "$DEST_DIR/self-improvement/"
 
 cat > "$DEST_DIR/INSTALL_STATE.md" <<EOF

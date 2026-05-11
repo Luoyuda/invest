@@ -11,25 +11,33 @@
    - `SOUL.md`
    - `WORKFLOW.md`
    - `SKILLS_INDEX.md`
+   - `references/`
    - `skills/`
    - `self-improvement/`
    - `scripts/install_lobster_assistant.sh`
+   - `scripts/validate_package.sh`
 
-2. 读取以下文件并理解安装目标：
+2. 先执行包校验：
+
+```bash
+bash scripts/validate_package.sh
+```
+
+3. 读取以下文件并理解安装目标：
    - `README.md`
    - `GUIDE.md`
    - `SKILLS_INDEX.md`
 
-3. 执行安装脚本：
+4. 执行安装脚本：
 
 ```bash
 bash scripts/install_lobster_assistant.sh
 ```
 
-4. 安装后检查：
+5. 安装后检查：
 
 ```bash
-find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 3 -type f | sort
+find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 4 -type f | sort
 ```
 
 同时检查本地版本记录：
@@ -38,18 +46,18 @@ find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 3 -type f | s
 cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
 ```
 
-5. 确认以下 Skill 已安装：
+6. 确认以下能力已安装：
+   - `a-share-data-provider`
+   - `a-share-evidence-pack`
    - `a-share-market-news`
    - `a-share-stock-analysis`
+   - `a-share-earnings-announcement-review`
+   - `a-share-sector-research`
    - `a-share-stock-recommendation`
-
-6. 确认自我迭代体系已安装：
-   - `SELF_IMPROVEMENT.md`
-   - `TASK_RUNNER_PROMPT.md`
-   - `INDEPENDENT_REVIEW_PROMPT.md`
-   - `OPTIMIZATION_ADVISOR_PROMPT.md`
-   - `SCORECARD.md`
-   - `TEST_CASES.md`
+   - `a-share-portfolio-review`
+   - `a-share-watchlist-tracker`
+   - `references`
+   - `self-improvement`
 
 ## 安装完成后的回复格式
 
@@ -57,10 +65,14 @@ cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
 ## 龙虾投资助手安装结果
 
 - 安装目录：
-- 已安装 Skill：
+- 版本号：
+- 源 commit：
+- 已安装 Skill 数量：
+- 已安装 reference 数量：
 - 已安装自我迭代文件：
 - 本地版本记录：
 - 是否缺失文件：
+- 本地验证命令输出摘要：
 - 下一步建议：
 ```
 

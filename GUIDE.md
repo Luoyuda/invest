@@ -2,18 +2,17 @@
 
 ## 1. 项目目标
 
-龙虾投资助手是一个面向 A 股普通投资者的信息整理、个股分析、候选观察和自我迭代助手。
+龙虾投资助手是一个面向 A 股普通投资者的信息整理、数据核验、个股分析、候选观察、持仓复盘和自我迭代助手。
 
 它的核心目标不是喊单，而是：
 
 - 从公开信息中筛选真正影响 A 股盘面、板块和个股涨跌的核心信息。
+- 把行情、公告、财报、资金、政策等关键事实整理成可审计证据包。
 - 帮用户理解政策、公告、财务、估值、资金和外围市场如何影响股票。
 - 生成可追溯、可解释、可复核的分析结果。
 - 通过三角色自我迭代体系持续提高专业性。
 
 ## 2. 推荐仓库结构
-
-将本目录内容放入 `https://github.com/Luoyuda/invest.git` 仓库后，建议保持如下结构：
 
 ```text
 invest/
@@ -25,25 +24,24 @@ invest/
 ├── USER_PROFILE.md
 ├── SKILLS_INDEX.md
 ├── XIAOLONGXIA_INSTALL_PROMPT.md
+├── references/
+│   ├── a-share-data-sources.md
+│   ├── evidence-schema.md
+│   └── skill-quality-rubric.md
 ├── skills/
+│   ├── a-share-data-provider/
+│   ├── a-share-evidence-pack/
 │   ├── a-share-market-news/
-│   │   └── SKILL.md
 │   ├── a-share-stock-analysis/
-│   │   └── SKILL.md
-│   └── a-share-stock-recommendation/
-│       └── SKILL.md
+│   ├── a-share-earnings-announcement-review/
+│   ├── a-share-sector-research/
+│   ├── a-share-stock-recommendation/
+│   ├── a-share-portfolio-review/
+│   └── a-share-watchlist-tracker/
 ├── self-improvement/
-│   ├── SELF_IMPROVEMENT.md
-│   ├── TASK_RUNNER_PROMPT.md
-│   ├── INDEPENDENT_REVIEW_PROMPT.md
-│   ├── OPTIMIZATION_ADVISOR_PROMPT.md
-│   ├── DAILY_SELF_CHECK_PROMPT.md
-│   ├── WEEKLY_ITERATION_PROMPT.md
-│   ├── SCORECARD.md
-│   ├── TEST_CASES.md
-│   └── CHANGE_PROPOSAL_TEMPLATE.md
 └── scripts/
-    └── install_lobster_assistant.sh
+    ├── install_lobster_assistant.sh
+    └── validate_package.sh
 ```
 
 ## 3. 安装方式
@@ -54,26 +52,13 @@ invest/
 bash scripts/install_lobster_assistant.sh
 ```
 
-脚本会把 Skill 和配置复制到：
+脚本会把 Skill、references 和配置复制到：
 
 ```text
-~/.codex/skills/lobster-invest/
+${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/
 ```
 
-如果运行环境使用自定义 `CODEX_HOME`，脚本会安装到：
-
-```text
-$CODEX_HOME/skills/lobster-invest/
-```
-
-每次安装都会记录本地版本：
-
-```text
-$CODEX_HOME/skills/lobster-invest/VERSION
-$CODEX_HOME/skills/lobster-invest/INSTALL_STATE.md
-```
-
-`INSTALL_STATE.md` 包含：
+每次安装都会记录：
 
 - 当前配置版本号。
 - 安装时间。
@@ -85,71 +70,46 @@ $CODEX_HOME/skills/lobster-invest/INSTALL_STATE.md
 
 小龙虾读取本仓库时，按以下顺序加载：
 
-1. `README.md`：了解仓库用途。
-2. `VERSION`：确认当前配置版本。
-3. `SOUL.md`：加载底线规则和角色人格。
-4. `WORKFLOW.md`：加载任务路由和工作流程。
-5. `SKILLS_INDEX.md`：判断用户任务应该使用哪个 Skill。
-6. 具体任务 Skill：
-   - 财经要闻：`skills/a-share-market-news/SKILL.md`
-   - 个股分析：`skills/a-share-stock-analysis/SKILL.md`
-   - 个股推荐：`skills/a-share-stock-recommendation/SKILL.md`
-7. 自我迭代：
-   - 总机制：`self-improvement/SELF_IMPROVEMENT.md`
-   - 三角色：`TASK_RUNNER_PROMPT.md`、`INDEPENDENT_REVIEW_PROMPT.md`、`OPTIMIZATION_ADVISOR_PROMPT.md`
+1. `README.md`
+2. `VERSION`
+3. `SOUL.md`
+4. `WORKFLOW.md`
+5. `SKILLS_INDEX.md`
+6. 共享 references：
+   - `references/a-share-data-sources.md`
+   - `references/evidence-schema.md`
+   - `references/skill-quality-rubric.md`
+7. 用户任务对应的具体 Skill。
+8. 自我迭代相关文件。
 
 ## 5. Skill 路由
 
-### A 股核心财经要闻
+| 用户意图 | 使用 Skill |
+|---|---|
+| 查数据、确认代码、找公告、查财报 | `a-share-data-provider` |
+| 补来源、审计来源、生成证据包 | `a-share-evidence-pack` |
+| 今日/昨日/近几日 A 股要闻 | `a-share-market-news` |
+| 某只股票怎么看、为什么涨跌 | `a-share-stock-analysis` |
+| 公告、财报、业绩预告、问询函解读 | `a-share-earnings-announcement-review` |
+| 行业、赛道、板块、产业链研究 | `a-share-sector-research` |
+| 推荐股票、筛选候选观察池 | `a-share-stock-recommendation` |
+| 持仓、组合、亏损原因、风险暴露复盘 | `a-share-portfolio-review` |
+| 跟踪上次推荐、自选股、候选池更新 | `a-share-watchlist-tracker` |
 
-触发词：
-
-- 今日要闻
-- 近 1 日 / 近 3 日 / 近一周
-- A 股利好利空
-- 盘前/盘后核心消息
-
-使用：
-
-```text
-skills/a-share-market-news/SKILL.md
-```
-
-### A 股个股分析
-
-触发词：
-
-- 分析某只股票
-- 某股票怎么看
-- 为什么涨/跌
-- 公告影响
-- 基本面/估值/资金面分析
-
-使用：
+## 6. 标准执行链
 
 ```text
-skills/a-share-stock-analysis/SKILL.md
+识别意图
+  -> 读取数据源策略和证据 schema
+  -> 获取/核验事实
+  -> 任务 skill 分析
+  -> 证据包检查
+  -> 输出正文和来源链接
 ```
 
-### A 股个股候选推荐
+涉及个股、公告、行情、财报、资金、推荐时，不允许跳过来源核验。
 
-触发词：
-
-- 推荐几只股票
-- 找潜在机会
-- 筛选股票
-- 给观察标的
-- 生成股票候选池
-
-使用：
-
-```text
-skills/a-share-stock-recommendation/SKILL.md
-```
-
-注意：这里的“推荐”只表示候选观察清单，不是买入指令。
-
-## 6. 自我迭代机制
+## 7. 自我迭代机制
 
 自我迭代采用三角色隔离：
 
@@ -171,20 +131,6 @@ skills/a-share-stock-recommendation/SKILL.md
 - 优化建议者不得跳过 Review 直接评分。
 - 没有独立 Review 报告，不得给通过结论。
 
-## 7. 冷启动迭代频率
-
-前 14 天或仍有中高风险问题时：
-
-- 每天轻量自检。
-- 每 3 天深度迭代。
-- 每周回归测试。
-
-稳定期：
-
-- 每 3 天轻量自检。
-- 每周深度迭代。
-- 每 2 周固定评测。
-
 ## 8. 金融安全边界
 
 任何任务都必须遵守：
@@ -193,5 +139,23 @@ skills/a-share-stock-recommendation/SKILL.md
 - 不喊单。
 - 不给明确买入、卖出、仓位、目标价、止损价。
 - 高时效信息必须联网核验。
+- 关键事实必须绑定来源和数据时间。
+- 最终回答必须包含来源链接区块。
 - 来源不足时少说或不说。
 - 个股相关输出必须包含风险和逻辑失效条件。
+
+## 9. 本地校验
+
+修改配置后执行：
+
+```bash
+bash scripts/validate_package.sh
+```
+
+校验项包括：
+
+- 每个 skill 是否有 frontmatter。
+- `name` 是否和目录一致。
+- 是否引用数据源和证据包 reference。
+- 文档索引是否覆盖所有 skill。
+- 安装脚本是否会复制所有 skill 和 references。

@@ -27,9 +27,21 @@ Root docs:
 
 Skills:
 
+- `skills/a-share-data-provider/SKILL.md`
+- `skills/a-share-evidence-pack/SKILL.md`
 - `skills/a-share-market-news/SKILL.md`
 - `skills/a-share-stock-analysis/SKILL.md`
+- `skills/a-share-earnings-announcement-review/SKILL.md`
+- `skills/a-share-sector-research/SKILL.md`
 - `skills/a-share-stock-recommendation/SKILL.md`
+- `skills/a-share-portfolio-review/SKILL.md`
+- `skills/a-share-watchlist-tracker/SKILL.md`
+
+References:
+
+- `references/a-share-data-sources.md`
+- `references/evidence-schema.md`
+- `references/skill-quality-rubric.md`
 
 Self improvement:
 
@@ -47,3 +59,4 @@ Self improvement:
 Scripts:
 
 - `scripts/install_lobster_assistant.sh`
+- `scripts/validate_package.sh`
