@@ -1,0 +1,26 @@
+{
+  "as_of": "2026-05-13",
+  "benchmark": "沪深300",
+  "sectors": [
+    {
+      "name": "AI算力",
+      "relative_strength_5d": 3.2,
+      "turnover_change_5d": 18.5,
+      "breadth": 0.68,
+      "policy_industry_catalyst": "国产算力政策催化",
+      "capital_flow_score": 1.0,
+      "overheat_score": 0.2,
+      "source_refs": ["S1"]
+    },
+    {
+      "name": "低活跃样例",
+      "relative_strength_5d": -2.1,
+      "turnover_change_5d": -10.0,
+      "breadth": 0.32,
+      "policy_industry_catalyst": "",
+      "capital_flow_score": -1.0,
+      "overheat_score": 0.0,
+      "source_refs": ["S2"]
+    }
+  ]
+}

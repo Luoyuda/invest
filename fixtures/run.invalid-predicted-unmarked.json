@@ -1,0 +1,63 @@
+{
+  "run_id": "fixture-invalid-predicted",
+  "run_time": "2026-05-13T14:00:00+08:00",
+  "task_type": "ad_hoc_recommendation",
+  "sector_state_ref": {
+    "path": "runtime/sector-state.latest.json",
+    "as_of": "2026-05-12",
+    "valid_until": "2026-05-19",
+    "status": "valid"
+  },
+  "recommendations": [
+    {
+      "name": "样例股份",
+      "code": "000001",
+      "exchange": "SZSE",
+      "sector": "AI算力",
+      "sector_status": "hot",
+      "attention_level": "medium",
+      "recommendation_type": "policy_catalyst",
+      "recommendation_reason": ["预测价未标注"],
+      "key_data": [],
+      "price_reference": {
+        "price_type": "predicted",
+        "value": 12.0,
+        "unit": "元",
+        "data_time": "2026-05-13 14:00:00+08:00",
+        "source": "model",
+        "evidence_id": "E1"
+      },
+      "risks": ["样例风险"],
+      "invalid_if": ["样例失效"],
+      "evidence_ids": ["E1", "E2"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "source_name": "模型预测",
+      "source_type": "prediction",
+      "stability_tier": "model",
+      "url": "https://example.com",
+      "data_time": "2026-05-13 14:00:00+08:00",
+      "raw_value": "预测价12元",
+      "normalized_value": 12.0,
+      "unit": "元",
+      "transform": "模型预测",
+      "supports": ["price_reference.predicted"]
+    },
+    {
+      "id": "E2",
+      "source_name": "板块数据",
+      "source_type": "sector",
+      "stability_tier": "S3",
+      "url": "https://example.com",
+      "data_time": "2026-05-12",
+      "raw_value": "热门",
+      "normalized_value": "hot",
+      "unit": "status",
+      "transform": "无",
+      "supports": ["sector_status"]
+    }
+  ]
+}

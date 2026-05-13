@@ -51,11 +51,15 @@
 辅助脚本：
 
 - `scripts/fetch_a_share_data.py`：获取轻量行情。
+- `scripts/build_sector_metrics.py`：从 CSV/导出数据构建板块指标输入。
 - `scripts/generate_sector_state.py`：生成运行态板块状态。
+- `scripts/collect_catalysts.py`：收集公告、政策、产业催化记录。
+- `scripts/generate_candidates.py`：从股票池和板块状态生成候选。
 - `scripts/generate_recommendation_run.py`：生成推荐 run。
 - `scripts/validate_run.sh`：执行硬规则校验。
 - `scripts/audit_run_sources.py`：审计来源字段和链接可访问性。
 - `scripts/append_feedback.py`：写入反馈日志。
+- `scripts/replay_recommendations.py`：复盘推荐后价格表现。
 - `scripts/weekly_review.py`：生成周度复盘。
 
 ## 3. 输出硬规则

@@ -1,0 +1,63 @@
+{
+  "run_id": "fixture-invalid-low-activity",
+  "run_time": "2026-05-13T09:00:00+08:00",
+  "task_type": "daily_0900_recommendation",
+  "sector_state_ref": {
+    "path": "runtime/sector-state.latest.json",
+    "as_of": "2026-05-12",
+    "valid_until": "2026-05-19",
+    "status": "valid"
+  },
+  "recommendations": [
+    {
+      "name": "样例股份",
+      "code": "000001",
+      "exchange": "SZSE",
+      "sector": "低活跃样例",
+      "sector_status": "low_activity",
+      "attention_level": "high",
+      "recommendation_type": "contrarian",
+      "recommendation_reason": ["低活跃方向错误高关注"],
+      "key_data": [],
+      "price_reference": {
+        "price_type": "previous_close",
+        "value": 10.0,
+        "unit": "元",
+        "data_time": "2026-05-12 15:00:00+08:00",
+        "source": "东方财富",
+        "evidence_id": "E1"
+      },
+      "risks": ["样例风险"],
+      "invalid_if": ["样例失效"],
+      "evidence_ids": ["E1", "E2"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "source_name": "东方财富",
+      "source_type": "market_data",
+      "stability_tier": "S3",
+      "url": "https://example.com",
+      "data_time": "2026-05-12 15:00:00+08:00",
+      "raw_value": "收盘价10元",
+      "normalized_value": 10.0,
+      "unit": "元",
+      "transform": "无",
+      "supports": ["price_reference.previous_close"]
+    },
+    {
+      "id": "E2",
+      "source_name": "板块数据",
+      "source_type": "sector",
+      "stability_tier": "S3",
+      "url": "https://example.com",
+      "data_time": "2026-05-12",
+      "raw_value": "低活跃",
+      "normalized_value": "low_activity",
+      "unit": "status",
+      "transform": "无",
+      "supports": ["sector_status"]
+    }
+  ]
+}

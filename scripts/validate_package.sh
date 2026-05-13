@@ -16,12 +16,18 @@ fail() {
 [[ -d references ]] || fail "missing references/"
 [[ -f runtime/README.md ]] || fail "missing runtime/README.md"
 [[ -f scripts/validate_run.sh ]] || fail "missing scripts/validate_run.sh"
+[[ -x scripts/smoke_test.sh ]] || fail "missing executable scripts/smoke_test.sh"
+[[ -x scripts/smoke_test_installed.sh ]] || fail "missing executable scripts/smoke_test_installed.sh"
 for script in \
   scripts/fetch_a_share_data.py \
+  scripts/build_sector_metrics.py \
   scripts/generate_sector_state.py \
+  scripts/collect_catalysts.py \
+  scripts/generate_candidates.py \
   scripts/generate_recommendation_run.py \
   scripts/append_feedback.py \
   scripts/audit_run_sources.py \
+  scripts/replay_recommendations.py \
   scripts/weekly_review.py; do
   [[ -f "$script" ]] || fail "missing $script"
   [[ -x "$script" ]] || fail "$script must be executable"
@@ -51,6 +57,9 @@ grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime RE
 grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
 grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
+grep -q 'build_sector_metrics.py' runtime/README.md || fail "runtime README must list sector metrics builder"
+grep -q 'generate_candidates.py' runtime/README.md || fail "runtime README must list candidate generator"
+grep -q 'replay_recommendations.py' runtime/README.md || fail "runtime README must list replay script"
 grep -q 'generate_recommendation_run.py' runtime/README.md || fail "runtime README must list recommendation generator"
 grep -q 'weekly_review.py' runtime/README.md || fail "runtime README must list weekly review"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
@@ -90,7 +99,21 @@ grep -q 'for skill_dir in "$ROOT_DIR"/skills/\*' scripts/install_lobster_assista
 grep -q 'references/' scripts/install_lobster_assistant.sh || fail "install script must copy references"
 grep -q 'runtime/README.md' scripts/install_lobster_assistant.sh || fail "install script must copy runtime README"
 grep -q '\*.py' scripts/install_lobster_assistant.sh || fail "install script must copy python scripts"
+grep -q 'fixtures/' scripts/install_lobster_assistant.sh || fail "install script must copy fixtures"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
+
+for fixture in \
+  fixtures/sector-metrics.sample.json \
+  fixtures/sector-metrics.sample.csv \
+  fixtures/stocks.sample.csv \
+  fixtures/catalysts.sample.csv \
+  fixtures/candidates.valid.json \
+  fixtures/replay-prices.sample.csv \
+  fixtures/run.invalid-low-activity-high.json \
+  fixtures/run.invalid-0900-intraday.json \
+  fixtures/run.invalid-predicted-unmarked.json; do
+  [[ -f "$fixture" ]] || fail "missing $fixture"
+done
 
 echo "Package validation passed"
 echo "Skills: $skill_count"

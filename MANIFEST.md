@@ -65,11 +65,29 @@ Self improvement:
 Scripts:
 
 - `scripts/fetch_a_share_data.py`
+- `scripts/build_sector_metrics.py`
 - `scripts/generate_sector_state.py`
+- `scripts/collect_catalysts.py`
+- `scripts/generate_candidates.py`
 - `scripts/generate_recommendation_run.py`
 - `scripts/append_feedback.py`
 - `scripts/audit_run_sources.py`
+- `scripts/replay_recommendations.py`
 - `scripts/weekly_review.py`
 - `scripts/install_lobster_assistant.sh`
 - `scripts/validate_package.sh`
 - `scripts/validate_run.sh`
+- `scripts/smoke_test.sh`
+- `scripts/smoke_test_installed.sh`
+
+Fixtures:
+
+- `fixtures/sector-metrics.sample.json`
+- `fixtures/sector-metrics.sample.csv`
+- `fixtures/stocks.sample.csv`
+- `fixtures/catalysts.sample.csv`
+- `fixtures/candidates.valid.json`
+- `fixtures/replay-prices.sample.csv`
+- `fixtures/run.invalid-low-activity-high.json`
+- `fixtures/run.invalid-0900-intraday.json`
+- `fixtures/run.invalid-predicted-unmarked.json`

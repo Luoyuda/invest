@@ -1,0 +1,2 @@
+name,code,exchange,sector,previous_close,price_data_time,price_source,price_raw_value,catalyst,fundamental_score,capital_score,risk,invalid_if
+样例股份,000001,SZSE,AI算力,10.0,2026-05-12 15:00:00+08:00,fixture,收盘价10元,国产算力政策催化,15,8,样例风险,板块催化证伪或相对强度走弱

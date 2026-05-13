@@ -28,6 +28,7 @@ https://github.com/Luoyuda/invest.git
 - 安装脚本
 - 推荐 run 硬规则校验脚本
 - 运行态生成脚本：行情获取、板块状态、推荐 run、反馈写入、来源审计、周度复盘
+- 固定 fixtures 和 smoke test，用于验证正反例与完整本地链路
 - 小龙虾读取仓库后的启动 Prompt
 
 ## 快速安装

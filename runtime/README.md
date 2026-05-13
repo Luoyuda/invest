@@ -112,12 +112,18 @@ runtime/weekly-review.latest.json
 
 ```text
 scripts/fetch_a_share_data.py          # 轻量获取 A 股行情，写入 market-data
+scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
+scripts/collect_catalysts.py           # 从公告/政策/产业 CSV 收集催化记录
+scripts/generate_candidates.py         # 从股票池和板块状态生成候选输入
 scripts/generate_recommendation_run.py # 从结构化候选生成 recommendation-runs/latest.json
 scripts/validate_run.sh                # 硬规则校验 recommendation run
 scripts/audit_run_sources.py           # 检查 evidence 字段和来源链接可访问性
 scripts/append_feedback.py             # 写入 feedback-log.jsonl
+scripts/replay_recommendations.py      # 用后续价格复盘推荐结果
 scripts/weekly_review.py               # 汇总 run 和 feedback，生成周度复盘
+scripts/smoke_test.sh                  # 本地完整链路 smoke test
+scripts/smoke_test_installed.sh        # 安装目录 smoke test
 ```
 
 这些脚本不替代专业判断。它们负责把运行态产物结构化、可校验、可复盘。
