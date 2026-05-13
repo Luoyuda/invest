@@ -12,7 +12,7 @@
 | 分析单只或多只个股 | `skills/a-share-stock-analysis/SKILL.md` |
 | 解读财报、业绩预告、公告、问询函 | `skills/a-share-earnings-announcement-review/SKILL.md` |
 | 分析行业、赛道、板块、产业链 | `skills/a-share-sector-research/SKILL.md` |
-| 推荐股票/筛选候选观察池 | `skills/a-share-stock-recommendation/SKILL.md` |
+| 推荐股票/筛选推荐清单 | `skills/a-share-stock-recommendation/SKILL.md` |
 | 复盘持仓或组合风险 | `skills/a-share-portfolio-review/SKILL.md` |
 | 跟踪候选池、自选股、上次推荐 | `skills/a-share-watchlist-tracker/SKILL.md` |
 | 审计自身回答 | `self-improvement/INDEPENDENT_REVIEW_PROMPT.md` |
@@ -38,20 +38,20 @@
 - 涉及个股时必须确认代码、交易所、数据时间。
 - 最终回答必须有“来源链接”或“参考来源”区块。
 - 来源不足时降低结论确定性，不补编。
-- 不输出买入、卖出、加仓、清仓、仓位、目标价、止损价。
+- 不输出无条件买入、卖出、加仓、清仓、仓位、无来源目标价、无口径止损价。
 
 ## 4. 推荐与候选池边界
 
-“推荐”只表示：
+“推荐”表示：
 
-- 候选观察清单。
+- 明确的个股推荐清单。
 - 研究优先级。
-- 关注理由。
+- 推荐理由。
 - 风险和逻辑失效条件。
 
 不表示：
 
-- 买入指令。
+- 无条件买入指令。
 - 收益承诺。
 - 仓位建议。
 - 短线涨跌预测。
