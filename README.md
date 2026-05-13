@@ -9,6 +9,7 @@ https://github.com/Luoyuda/invest.git
 本目录是一套面向「龙虾投资助手」的完整配置包，包含：
 
 - 版本号：`VERSION`
+- 更新记录：`CHANGELOG.md`
 - 角色设定：`SOUL.md`
 - 工作流程：`WORKFLOW.md`
 - 用户档案：`USER_PROFILE.md`
@@ -28,6 +29,7 @@ https://github.com/Luoyuda/invest.git
 - 安装脚本
 - 推荐 run 硬规则校验脚本
 - 运行态生成脚本：行情获取、板块状态、推荐 run、反馈写入、来源审计、周度复盘
+- 多源 provider registry：东方财富行情/板块直接适配，腾讯行情交叉校验，同花顺通过 AKShare 可选适配
 - 固定 fixtures 和 smoke test，用于验证正反例与完整本地链路
 - 小龙虾读取仓库后的启动 Prompt
 
@@ -52,7 +54,7 @@ bash scripts/install_lobster_assistant.sh
 ~/.codex/skills/lobster-invest/INSTALL_STATE.md
 ```
 
-`INSTALL_STATE.md` 会记录版本号、安装时间、源仓库、源提交和安装目录。
+`INSTALL_STATE.md` 会记录版本号、安装时间、源仓库、源提交和安装目录。`CHANGELOG.md` 会同步到龙虾目录的 `docs/CHANGELOG.md`，用于说明本次更新内容和安装方式。
 
 安装后，小龙虾应优先读取：
 

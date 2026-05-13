@@ -32,6 +32,7 @@ mkdir -p "$DEST_DIR/scripts"
 mkdir -p "$DEST_DIR/fixtures"
 
 cp "$ROOT_DIR/README.md" "$DEST_DIR/docs/README.md"
+cp "$ROOT_DIR/CHANGELOG.md" "$DEST_DIR/docs/CHANGELOG.md"
 cp "$ROOT_DIR/GUIDE.md" "$DEST_DIR/docs/GUIDE.md"
 cp "$ROOT_DIR/SOUL.md" "$DEST_DIR/docs/SOUL.md"
 cp "$ROOT_DIR/WORKFLOW.md" "$DEST_DIR/docs/WORKFLOW.md"

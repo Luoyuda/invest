@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Fetch lightweight A-share market data for runtime artifacts.
+"""Fetch A-share quote data from multiple providers for runtime artifacts.
 
-This script intentionally keeps dependencies to Python stdlib. It uses public
-Eastmoney quote endpoints as a best-effort S3 data source and records source
-metadata for later evidence checks. For official announcements/financials, use
-S1 sources manually or through a dedicated provider.
+The default path intentionally keeps dependencies to Python stdlib. Eastmoney is
+used as the primary public S3 quote provider and Tencent as an S4 fallback /
+cross-check provider. Optional providers can be added without changing the
+downstream recommendation schema.
 """
 
 from __future__ import annotations
@@ -17,7 +17,10 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+
+QuoteProvider = Callable[[str], dict[str, Any]]
 
 
 def secid_for(code: str) -> str:
@@ -31,17 +34,29 @@ def secid_for(code: str) -> str:
     raise ValueError(f"cannot infer exchange for code: {code}")
 
 
-def fetch_json(url: str, params: dict[str, str], timeout: int = 10) -> dict[str, Any]:
+def fetch_json(url: str, params: dict[str, str], timeout: int = 10, retries: int = 2) -> dict[str, Any]:
     query = urllib.parse.urlencode(params)
     request = urllib.request.Request(
         f"{url}?{query}",
         headers={
-            "User-Agent": "Mozilla/5.0 lobster-invest/1.0",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) lobster-invest/1.0",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
             "Referer": "https://quote.eastmoney.com/",
+            "Connection": "close",
         },
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as exc:  # noqa: BLE001 - provider diagnostics must retain original failure
+            last_exc = exc
+            if attempt < retries:
+                time.sleep(0.3 * (attempt + 1))
+    assert last_exc is not None
+    raise last_exc
 
 
 def scaled_price(value: Any) -> float | None:
@@ -115,6 +130,10 @@ def fetch_quote(code: str) -> dict[str, Any]:
     return result
 
 
+def fetch_quote_eastmoney(code: str) -> dict[str, Any]:
+    return fetch_quote(code)
+
+
 def tencent_symbol(code: str) -> str:
     if code.startswith("6"):
         return f"sh{code}"
@@ -172,11 +191,106 @@ def fetch_quote_tencent(code: str) -> dict[str, Any]:
     }
 
 
+QUOTE_PROVIDERS: dict[str, QuoteProvider] = {
+    "eastmoney": fetch_quote_eastmoney,
+    "tencent": fetch_quote_tencent,
+}
+
+
+def normalize_providers(value: str) -> list[str]:
+    providers = [item.strip().lower() for item in value.split(",") if item.strip()]
+    unknown = [item for item in providers if item not in QUOTE_PROVIDERS]
+    if unknown:
+        raise ValueError(f"unknown quote provider(s): {', '.join(unknown)}")
+    return providers
+
+
+def provider_rank(result: dict[str, Any]) -> tuple[int, str]:
+    tier = ((result.get("source") or {}).get("stability_tier") or "S9").upper()
+    try:
+        rank = int(tier[1:])
+    except (ValueError, IndexError):
+        rank = 9
+    return rank, (result.get("source") or {}).get("source_name") or ""
+
+
+def pct_diff(left: float | None, right: float | None) -> float | None:
+    if left in (None, 0) or right is None:
+        return None
+    return round(abs(left - right) / abs(left) * 100, 4)
+
+
+def cross_check_quotes(results: list[dict[str, Any]], max_price_diff_pct: float) -> dict[str, Any]:
+    warnings: list[str] = []
+    valid = [item for item in results if item.get("status") == "ok" and item.get("quote")]
+    if not valid:
+        return {"status": "failed", "warnings": ["no provider returned quote data"], "checks": []}
+    if len(valid) == 1:
+        source_name = (valid[0]["quote"].get("source") or {}).get("source_name", valid[0]["provider"])
+        return {
+            "status": "single_source",
+            "warnings": [f"only {source_name} returned quote data; downgrade confidence"],
+            "checks": [],
+        }
+
+    selected = sorted((item["quote"] for item in valid), key=provider_rank)[0]
+    checks = []
+    for item in valid:
+        quote = item["quote"]
+        if quote is selected:
+            continue
+        for field in ["latest_price", "previous_close", "open", "high", "low"]:
+            diff = pct_diff(selected.get(field), quote.get(field))
+            if diff is None:
+                continue
+            check = {
+                "field": field,
+                "primary": selected.get(field),
+                "provider": item["provider"],
+                "provider_value": quote.get(field),
+                "diff_pct": diff,
+            }
+            checks.append(check)
+            if diff > max_price_diff_pct:
+                warnings.append(f"{field} differs by {diff}% between primary and {item['provider']}")
+
+    status = "passed" if not warnings else "conflict"
+    return {"status": status, "warnings": warnings, "checks": checks}
+
+
+def fetch_quote_multi(code: str, providers: list[str], max_price_diff_pct: float) -> dict[str, Any]:
+    provider_results = []
+    for provider in providers:
+        try:
+            quote = QUOTE_PROVIDERS[provider](code)
+            provider_results.append({"provider": provider, "status": "ok", "quote": quote})
+        except Exception as exc:  # noqa: BLE001 - provider diagnostics must be retained
+            provider_results.append({"provider": provider, "status": "error", "error": str(exc)})
+
+    ok_quotes = [item["quote"] for item in provider_results if item.get("status") == "ok" and item.get("quote")]
+    if not ok_quotes:
+        raise RuntimeError(f"all quote providers failed for {code}")
+    selected = sorted(ok_quotes, key=provider_rank)[0]
+    quality = cross_check_quotes(provider_results, max_price_diff_pct)
+    merged = dict(selected)
+    merged["provider_results"] = provider_results
+    merged["quality"] = quality
+    merged["source_policy"] = "primary provider by stability tier; other providers used for cross-check"
+    return merged
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch lightweight A-share quotes")
     parser.add_argument("codes", nargs="+", help="A-share stock codes, e.g. 000001 600000")
     parser.add_argument("--output", "-o", default="runtime/market-data/latest-quotes.json")
+    parser.add_argument(
+        "--providers",
+        default="eastmoney,tencent",
+        help=f"Comma-separated quote providers. Available: {', '.join(QUOTE_PROVIDERS)}",
+    )
+    parser.add_argument("--max-price-diff-pct", type=float, default=0.5)
     args = parser.parse_args()
+    providers = normalize_providers(args.providers)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -185,17 +299,16 @@ def main() -> int:
     errors = []
     for code in args.codes:
         try:
-            try:
-                quotes.append(fetch_quote(code))
-            except Exception:
-                quotes.append(fetch_quote_tencent(code))
+            quotes.append(fetch_quote_multi(code, providers, args.max_price_diff_pct))
             time.sleep(0.2)
         except Exception as exc:  # noqa: BLE001 - command-line diagnostics
             errors.append({"code": code, "error": str(exc)})
 
     payload = {
         "generated_at": datetime.now().astimezone().isoformat(),
-        "source_policy": "S3 Eastmoney quote endpoint; cross-check important fields before high-confidence output.",
+        "source_policy": "Provider registry: Eastmoney S3 primary, Tencent S4 fallback/cross-check by default.",
+        "providers": providers,
+        "max_price_diff_pct": args.max_price_diff_pct,
         "quotes": quotes,
         "errors": errors,
     }

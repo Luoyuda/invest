@@ -10,6 +10,7 @@ fail() {
 }
 
 [[ -f README.md ]] || fail "missing README.md"
+[[ -f CHANGELOG.md ]] || fail "missing CHANGELOG.md"
 [[ -f WORKFLOW.md ]] || fail "missing WORKFLOW.md"
 [[ -f SKILLS_INDEX.md ]] || fail "missing SKILLS_INDEX.md"
 [[ -d skills ]] || fail "missing skills/"
@@ -20,6 +21,7 @@ fail() {
 [[ -x scripts/smoke_test_installed.sh ]] || fail "missing executable scripts/smoke_test_installed.sh"
 for script in \
   scripts/fetch_a_share_data.py \
+  scripts/fetch_sector_boards.py \
   scripts/build_sector_metrics.py \
   scripts/generate_sector_state.py \
   scripts/collect_catalysts.py \
@@ -40,6 +42,8 @@ done
 grep -q '## 1.0 稳定性分层' references/a-share-data-sources.md || fail "data sources must define stability tiers"
 grep -q 'S1 原始/官方来源' references/a-share-data-sources.md || fail "data sources must prioritize official sources"
 grep -q '09:00 定时任务价格' references/a-share-data-sources.md || fail "data sources must define 09:00 price source priority"
+grep -q '本仓库 Provider Registry' references/a-share-data-sources.md || fail "data sources must define provider registry"
+grep -q 'akshare_ths' references/a-share-data-sources.md || fail "data sources must document optional Tonghuashun provider"
 grep -q '## 1.0.1 数据整理不偏离原文' references/a-share-data-sources.md || fail "data sources must define non-deviation rules"
 grep -q 'raw_value' references/evidence-schema.md || fail "evidence schema must preserve raw_value"
 grep -q 'normalized_value' references/evidence-schema.md || fail "evidence schema must preserve normalized_value"
@@ -56,7 +60,9 @@ grep -q 'recommendation_run' references/run-output-schema.md || fail "run output
 grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime README must define sector-state artifact"
 grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
 grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
+grep -q 'runtime/market-data/sector-boards.latest.json' runtime/README.md || fail "runtime README must define sector board artifact"
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
+grep -q 'fetch_sector_boards.py' runtime/README.md || fail "runtime README must list sector board fetcher"
 grep -q 'build_sector_metrics.py' runtime/README.md || fail "runtime README must list sector metrics builder"
 grep -q 'generate_candidates.py' runtime/README.md || fail "runtime README must list candidate generator"
 grep -q 'replay_recommendations.py' runtime/README.md || fail "runtime README must list replay script"
@@ -100,6 +106,7 @@ grep -q 'references/' scripts/install_lobster_assistant.sh || fail "install scri
 grep -q 'runtime/README.md' scripts/install_lobster_assistant.sh || fail "install script must copy runtime README"
 grep -q '\*.py' scripts/install_lobster_assistant.sh || fail "install script must copy python scripts"
 grep -q 'fixtures/' scripts/install_lobster_assistant.sh || fail "install script must copy fixtures"
+grep -q 'CHANGELOG.md' scripts/install_lobster_assistant.sh || fail "install script must copy changelog"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
 
 for fixture in \

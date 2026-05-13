@@ -9,6 +9,7 @@ runtime/sector-state.latest.json
 runtime/recommendation-runs/latest.json
 runtime/feedback-log.jsonl
 runtime/market-data/latest-quotes.json
+runtime/market-data/sector-boards.latest.json
 runtime/source-audit.latest.json
 runtime/weekly-review.latest.json
 ```
@@ -118,7 +119,8 @@ runtime/weekly-review.latest.json
 仓库提供以下 V1 工具：
 
 ```text
-scripts/fetch_a_share_data.py          # 轻量获取 A 股行情，写入 market-data
+scripts/fetch_a_share_data.py          # 多源获取 A 股行情，写入 market-data
+scripts/fetch_sector_boards.py         # 获取东方财富/可选同花顺板块快照
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
 scripts/collect_catalysts.py           # 从公告/政策/产业 CSV 收集催化记录

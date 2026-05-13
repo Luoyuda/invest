@@ -8,6 +8,7 @@
 
 1. 确认当前仓库根目录包含：
    - `VERSION`
+   - `CHANGELOG.md`
    - `SOUL.md`
    - `WORKFLOW.md`
    - `SKILLS_INDEX.md`
@@ -25,6 +26,7 @@ bash scripts/validate_package.sh
 
 3. 读取以下文件并理解安装目标：
    - `README.md`
+   - `CHANGELOG.md`
    - `GUIDE.md`
    - `SKILLS_INDEX.md`
 
@@ -44,6 +46,7 @@ find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 4 -type f | s
 
 ```bash
 cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
+cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/docs/CHANGELOG.md"
 ```
 
 6. 确认以下能力已安装：
