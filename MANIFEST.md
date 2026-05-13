@@ -64,6 +64,12 @@ Self improvement:
 
 Scripts:
 
+- `scripts/fetch_a_share_data.py`
+- `scripts/generate_sector_state.py`
+- `scripts/generate_recommendation_run.py`
+- `scripts/append_feedback.py`
+- `scripts/audit_run_sources.py`
+- `scripts/weekly_review.py`
 - `scripts/install_lobster_assistant.sh`
 - `scripts/validate_package.sh`
 - `scripts/validate_run.sh`

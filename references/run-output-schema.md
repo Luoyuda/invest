@@ -118,3 +118,23 @@
 - `sector_status=low_activity` 不得给 `attention_level=high`。
 - `overheat_risk=high` 的板块不得直接给高关注，除非推荐项有 `fresh_catalyst_evidence_id`。
 - 不得输出无条件买入、卖出、加仓、仓位或收益承诺。
+
+## 5. 生成工具
+
+V1 推荐 run 可以由 `scripts/generate_recommendation_run.py` 从结构化候选文件生成。候选文件至少包含：
+
+```json
+{
+  "recommendations": [],
+  "evidence": []
+}
+```
+
+生成后必须运行：
+
+```bash
+bash scripts/validate_run.sh runtime/recommendation-runs/latest.json
+python3 scripts/audit_run_sources.py runtime/recommendation-runs/latest.json --skip-network
+```
+
+需要联网审计来源链接时，去掉 `--skip-network`。

@@ -8,6 +8,9 @@
 runtime/sector-state.latest.json
 runtime/recommendation-runs/latest.json
 runtime/feedback-log.jsonl
+runtime/market-data/latest-quotes.json
+runtime/source-audit.latest.json
+runtime/weekly-review.latest.json
 ```
 
 ## 1. sector-state.latest.json
@@ -102,3 +105,19 @@ runtime/feedback-log.jsonl
 ```
 
 每日快跑不负责全市场板块重算。全市场板块状态应由盘后或周度任务刷新。
+
+## 5. 工具脚本
+
+仓库提供以下 V1 工具：
+
+```text
+scripts/fetch_a_share_data.py          # 轻量获取 A 股行情，写入 market-data
+scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
+scripts/generate_recommendation_run.py # 从结构化候选生成 recommendation-runs/latest.json
+scripts/validate_run.sh                # 硬规则校验 recommendation run
+scripts/audit_run_sources.py           # 检查 evidence 字段和来源链接可访问性
+scripts/append_feedback.py             # 写入 feedback-log.jsonl
+scripts/weekly_review.py               # 汇总 run 和 feedback，生成周度复盘
+```
+
+这些脚本不替代专业判断。它们负责把运行态产物结构化、可校验、可复盘。

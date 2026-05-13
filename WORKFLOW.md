@@ -48,6 +48,16 @@
 
 每日快跑不做全市场板块重算。板块状态缺失、过期或冲突时，必须降级推荐确定性；全市场重算交给盘后或周度任务。
 
+辅助脚本：
+
+- `scripts/fetch_a_share_data.py`：获取轻量行情。
+- `scripts/generate_sector_state.py`：生成运行态板块状态。
+- `scripts/generate_recommendation_run.py`：生成推荐 run。
+- `scripts/validate_run.sh`：执行硬规则校验。
+- `scripts/audit_run_sources.py`：审计来源字段和链接可访问性。
+- `scripts/append_feedback.py`：写入反馈日志。
+- `scripts/weekly_review.py`：生成周度复盘。
+
 ## 3. 输出硬规则
 
 - 结论先行。

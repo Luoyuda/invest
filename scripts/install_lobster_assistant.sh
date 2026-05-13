@@ -27,6 +27,8 @@ mkdir -p "$DEST_DIR/skills"
 mkdir -p "$DEST_DIR/self-improvement"
 mkdir -p "$DEST_DIR/docs"
 mkdir -p "$DEST_DIR/references"
+mkdir -p "$DEST_DIR/runtime"
+mkdir -p "$DEST_DIR/scripts"
 
 cp "$ROOT_DIR/README.md" "$DEST_DIR/docs/README.md"
 cp "$ROOT_DIR/GUIDE.md" "$DEST_DIR/docs/GUIDE.md"
@@ -39,6 +41,7 @@ cp "$ROOT_DIR/VERSION" "$DEST_DIR/VERSION"
 
 find "$DEST_DIR/skills" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 find "$DEST_DIR/references" -type f -delete
+find "$DEST_DIR/scripts" -type f -delete
 
 for skill_dir in "$ROOT_DIR"/skills/*; do
   if [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]]; then
@@ -48,6 +51,9 @@ done
 
 cp "$ROOT_DIR/references/"*.md "$DEST_DIR/references/"
 cp "$ROOT_DIR/self-improvement/"*.md "$DEST_DIR/self-improvement/"
+cp "$ROOT_DIR/runtime/README.md" "$DEST_DIR/runtime/README.md"
+cp "$ROOT_DIR/scripts/"*.sh "$DEST_DIR/scripts/"
+cp "$ROOT_DIR/scripts/"*.py "$DEST_DIR/scripts/"
 
 cat > "$DEST_DIR/INSTALL_STATE.md" <<EOF
 # 龙虾投资助手本地安装状态

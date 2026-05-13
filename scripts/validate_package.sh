@@ -16,6 +16,16 @@ fail() {
 [[ -d references ]] || fail "missing references/"
 [[ -f runtime/README.md ]] || fail "missing runtime/README.md"
 [[ -f scripts/validate_run.sh ]] || fail "missing scripts/validate_run.sh"
+for script in \
+  scripts/fetch_a_share_data.py \
+  scripts/generate_sector_state.py \
+  scripts/generate_recommendation_run.py \
+  scripts/append_feedback.py \
+  scripts/audit_run_sources.py \
+  scripts/weekly_review.py; do
+  [[ -f "$script" ]] || fail "missing $script"
+  [[ -x "$script" ]] || fail "$script must be executable"
+done
 
 for ref in references/a-share-data-sources.md references/evidence-schema.md references/sector-state.md references/run-output-schema.md references/skill-quality-rubric.md; do
   [[ -f "$ref" ]] || fail "missing $ref"
@@ -40,6 +50,9 @@ grep -q 'recommendation_run' references/run-output-schema.md || fail "run output
 grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime README must define sector-state artifact"
 grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
 grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
+grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
+grep -q 'generate_recommendation_run.py' runtime/README.md || fail "runtime README must list recommendation generator"
+grep -q 'weekly_review.py' runtime/README.md || fail "runtime README must list weekly review"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
 grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
 grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read sector state ledger"
@@ -75,6 +88,8 @@ done < <(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
 
 grep -q 'for skill_dir in "$ROOT_DIR"/skills/\*' scripts/install_lobster_assistant.sh || fail "install script must copy all skill dirs"
 grep -q 'references/' scripts/install_lobster_assistant.sh || fail "install script must copy references"
+grep -q 'runtime/README.md' scripts/install_lobster_assistant.sh || fail "install script must copy runtime README"
+grep -q '\*.py' scripts/install_lobster_assistant.sh || fail "install script must copy python scripts"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
 
 echo "Package validation passed"
