@@ -102,6 +102,7 @@ done < <(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
 [[ "$skill_count" -ge 9 ]] || fail "expected at least 9 skills, got $skill_count"
 
 grep -q 'for skill_dir in "$ROOT_DIR"/skills/\*' scripts/install_lobster_assistant.sh || fail "install script must copy all skill dirs"
+grep -q 'LOBSTER_INSTALL_DIR' scripts/install_lobster_assistant.sh || fail "install script must support LOBSTER_INSTALL_DIR"
 grep -q 'references/' scripts/install_lobster_assistant.sh || fail "install script must copy references"
 grep -q 'runtime/README.md' scripts/install_lobster_assistant.sh || fail "install script must copy runtime README"
 grep -q '\*.py' scripts/install_lobster_assistant.sh || fail "install script must copy python scripts"

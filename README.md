@@ -41,17 +41,19 @@ https://github.com/Luoyuda/invest.git
 bash scripts/install_lobster_assistant.sh
 ```
 
-默认安装到：
+安装目录可以显式指定，不依赖某个固定客户端目录：
 
-```text
-~/.codex/skills/lobster-invest/
+```bash
+LOBSTER_INSTALL_DIR=/path/to/lobster-invest bash scripts/install_lobster_assistant.sh
 ```
+
+如果没有指定 `LOBSTER_INSTALL_DIR`，脚本会优先兼容 `CODEX_HOME/skills/lobster-invest`；否则安装到 `~/.lobster/skills/lobster-invest`。
 
 每次执行安装脚本后，会在本地写入版本记录：
 
 ```text
-~/.codex/skills/lobster-invest/VERSION
-~/.codex/skills/lobster-invest/INSTALL_STATE.md
+$LOBSTER_INSTALL_DIR/VERSION
+$LOBSTER_INSTALL_DIR/INSTALL_STATE.md
 ```
 
 `INSTALL_STATE.md` 会记录版本号、安装时间、源仓库、源提交和安装目录。`CHANGELOG.md` 会同步到龙虾目录的 `docs/CHANGELOG.md`，用于说明本次更新内容和安装方式。

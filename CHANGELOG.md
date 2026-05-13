@@ -34,18 +34,25 @@ bash scripts/validate_package.sh
 bash scripts/install_lobster_assistant.sh
 ```
 
-默认安装目录：
+安装目录不依赖 Codex。推荐显式指定龙虾实际读取的 skill 目录：
 
-```text
-${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest
+```bash
+export LOBSTER_INSTALL_DIR=/path/to/lobster-invest
+bash scripts/install_lobster_assistant.sh
+```
+
+也可以直接把目录作为参数传入：
+
+```bash
+bash scripts/install_lobster_assistant.sh /path/to/lobster-invest
 ```
 
 安装后检查：
 
 ```bash
-cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
-ls "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/docs"
-cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/docs/CHANGELOG.md"
+cat "$LOBSTER_INSTALL_DIR/INSTALL_STATE.md"
+ls "$LOBSTER_INSTALL_DIR/docs"
+cat "$LOBSTER_INSTALL_DIR/docs/CHANGELOG.md"
 ```
 
 需要同花顺板块能力时，龙虾运行环境还需要安装 AKShare：

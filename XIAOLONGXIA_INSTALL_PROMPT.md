@@ -33,20 +33,22 @@ bash scripts/validate_package.sh
 4. 执行安装脚本：
 
 ```bash
-bash scripts/install_lobster_assistant.sh
+LOBSTER_INSTALL_DIR=/path/to/lobster-invest bash scripts/install_lobster_assistant.sh
 ```
+
+如果调用方已经提供龙虾实际读取的 skill 目录，必须使用该目录；不要默认依赖 Codex 的 `~/.codex` 目录。
 
 5. 安装后检查：
 
 ```bash
-find "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest" -maxdepth 4 -type f | sort
+find "$LOBSTER_INSTALL_DIR" -maxdepth 4 -type f | sort
 ```
 
 同时检查本地版本记录：
 
 ```bash
-cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/INSTALL_STATE.md"
-cat "${CODEX_HOME:-$HOME/.codex}/skills/lobster-invest/docs/CHANGELOG.md"
+cat "$LOBSTER_INSTALL_DIR/INSTALL_STATE.md"
+cat "$LOBSTER_INSTALL_DIR/docs/CHANGELOG.md"
 ```
 
 6. 确认以下能力已安装：

@@ -2,8 +2,28 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CODEX_BASE="${CODEX_HOME:-$HOME/.codex}"
-DEST_DIR="$CODEX_BASE/skills/lobster-invest"
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'EOF'
+Usage:
+  LOBSTER_INSTALL_DIR=/path/to/lobster-invest bash scripts/install_lobster_assistant.sh
+  bash scripts/install_lobster_assistant.sh /path/to/lobster-invest
+
+Install destination priority:
+  1. First positional argument
+  2. LOBSTER_INSTALL_DIR
+  3. CODEX_HOME/skills/lobster-invest
+  4. $HOME/.lobster/skills/lobster-invest
+EOF
+  exit 0
+fi
+
+DEST_DIR="${1:-${LOBSTER_INSTALL_DIR:-}}"
+if [[ -z "$DEST_DIR" && -n "${CODEX_HOME:-}" ]]; then
+  DEST_DIR="$CODEX_HOME/skills/lobster-invest"
+fi
+if [[ -z "$DEST_DIR" ]]; then
+  DEST_DIR="$HOME/.lobster/skills/lobster-invest"
+fi
 VERSION_FILE="$ROOT_DIR/VERSION"
 VERSION="unknown"
 if [[ -f "$VERSION_FILE" ]]; then
