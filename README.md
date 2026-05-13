@@ -22,9 +22,11 @@ https://github.com/Luoyuda/invest.git
 - A 股个股候选推荐 Skill
 - A 股持仓复盘 Skill
 - A 股候选观察池跟踪 Skill
-- 共享 reference：数据源策略、证据包 schema、skill 质量评分表
+- 共享 reference：数据源策略、证据包 schema、板块状态账本、推荐 run schema、skill 质量评分表
+- 运行态产物规范：`runtime/sector-state.latest.json`、`runtime/recommendation-runs/latest.json`、`runtime/feedback-log.jsonl`
 - 三角色自我迭代体系
 - 安装脚本
+- 推荐 run 硬规则校验脚本
 - 小龙虾读取仓库后的启动 Prompt
 
 ## 快速安装
@@ -57,8 +59,10 @@ bash scripts/install_lobster_assistant.sh
 3. `SKILLS_INDEX.md`
 4. `references/a-share-data-sources.md`
 5. `references/evidence-schema.md`
-6. `self-improvement/SELF_IMPROVEMENT.md`
-7. 用户任务对应的具体 Skill
+6. `references/sector-state.md`
+7. `references/run-output-schema.md`
+8. `self-improvement/SELF_IMPROVEMENT.md`
+9. 用户任务对应的具体 Skill
 
 ## 核心原则
 

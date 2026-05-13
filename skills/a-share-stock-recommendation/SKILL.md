@@ -14,6 +14,7 @@ description: Use this skill when the user asks to推荐A股个股、筛选股票
 - `references/a-share-data-sources.md`
 - `references/evidence-schema.md`
 - `references/sector-state.md`
+- `references/run-output-schema.md`
 
 优先协同：
 
@@ -100,6 +101,15 @@ Quality Checklist：
 
 推荐前必须优先按 `references/sector-state.md` 的规则读取运行态板块状态，再列出 3-6 个候选行业/主题。运行态状态有效时，优先使用已沉淀的热门方向、景气改善方向和低活跃方向；状态缺失、过期或和当日行情冲突时，再按 `a-share-sector-research` 的板块热度口径重新计算。不得把仓库里的模板当作当前市场结论。
 
+每日 09:00 快跑必须读取 `runtime/sector-state.latest.json`：
+
+- 状态未过期：优先使用已有热门方向、景气改善方向和明确事件催化方向。
+- 状态过期且不能刷新：不得给高关注推荐，只能低确定性推荐或暂不推荐。
+- 状态与当日重大催化/重大负面冲突：相关方向降级并写明冲突。
+- 每日快跑不负责全市场板块重算；全市场重算交给盘后或周度任务。
+- 输出前必须生成 `runtime/recommendation-runs/latest.json`，按 `references/run-output-schema.md` 组织结构化结果，再渲染最终回答。
+- 输出前应运行 `scripts/validate_run.sh runtime/recommendation-runs/latest.json`；校验失败时不得直接输出高关注推荐。
+
 每个推荐标的所属板块至少满足以下条件之一：
 
 1. `强势板块`：最近 1 日/5 日/20 日相对强度、成交热度、广度或资金验证中至少 3 项成立。
@@ -111,6 +121,7 @@ Quality Checklist：
 - 热门方向必须来自最近一段时间的账本沉淀，默认看最近 5 个交易日；不能只看单日涨幅或单条新闻。
 - 如果热门方向超过有效期，必须重新核验相对强度、成交热度、广度、催化和资金。
 - 如果当日热门方向出现成交断层、广度坍塌或核心催化证伪，必须降级为“状态待确认”或“暂不推荐”。
+- 如果热门方向 `overheat_risk=high`，不得直接给高关注，除非有新的可核验催化证据。
 
 默认排除：
 
@@ -241,9 +252,11 @@ Quality Checklist：
 ## Quality Checklist
 
 - 每只推荐是否有来源。
+- 是否生成 `runtime/recommendation-runs/latest.json` 并通过 `scripts/validate_run.sh`。
 - 是否先完成板块热度筛选，再进入个股推荐。
 - 高关注标的是否来自强势、景气改善或明确催化板块。
 - 当期判定为低活跃的方向是否有相对强度改善或明确催化；否则是否放入暂不推荐。
+- 热门方向是否检查过热风险，过热时是否降级或要求新催化证据。
 - 是否解释传导链路。
 - 是否有风险和失效条件。
 - 是否避免交易指令。

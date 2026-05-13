@@ -31,6 +31,23 @@
 
 如果只是非时效性的概念解释，可以跳过数据 provider；但只要涉及个股、公告、行情、资金、财报、推荐，就必须保留证据链。
 
+## 2.1 每日推荐快跑
+
+每日 09:00 推荐走短链路：
+
+```text
+读取 runtime/sector-state.latest.json
+  -> 检查 valid_until
+  -> 刷新上一交易日收盘价
+  -> 检查重大催化/重大负面
+  -> 生成 runtime/recommendation-runs/latest.json
+  -> scripts/validate_run.sh 校验
+  -> 渲染最终推荐清单
+  -> 失败/反馈写入 runtime/feedback-log.jsonl
+```
+
+每日快跑不做全市场板块重算。板块状态缺失、过期或冲突时，必须降级推荐确定性；全市场重算交给盘后或周度任务。
+
 ## 3. 输出硬规则
 
 - 结论先行。

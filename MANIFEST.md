@@ -42,7 +42,12 @@ References:
 - `references/a-share-data-sources.md`
 - `references/evidence-schema.md`
 - `references/sector-state.md`
+- `references/run-output-schema.md`
 - `references/skill-quality-rubric.md`
+
+Runtime specs:
+
+- `runtime/README.md`
 
 Self improvement:
 
@@ -61,3 +66,4 @@ Scripts:
 
 - `scripts/install_lobster_assistant.sh`
 - `scripts/validate_package.sh`
+- `scripts/validate_run.sh`

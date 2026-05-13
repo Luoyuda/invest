@@ -167,6 +167,38 @@ lobster-assistant/
    - 如果回归测试引入新的高风险问题，必须回滚本次提案或重新生成修订提案。
    - 回归通过不代表进入稳定期；稳定期仍需满足连续 2 周无高风险问题。
 
+## V1 自动化闭环
+
+日常推荐链路不执行完整三角色 review。V1 自我迭代只消费运行态产物和失败记录：
+
+- `runtime/recommendation-runs/latest.json`
+- `runtime/feedback-log.jsonl`
+- `scripts/validate_run.sh` 的失败结果
+
+失败类型固定为：
+
+| failure_type | 含义 |
+|---|---|
+| `sector_state_stale` | 板块状态过期仍被使用 |
+| `sector_selection_error` | 板块选择与状态或证据不匹配 |
+| `source_missing` | 关键事实缺来源 |
+| `source_mismatch` | 来源不能支撑结论 |
+| `extract_error` | 原始值到整理值抽取/单位/口径错误 |
+| `stale_data` | 旧数据被当作新数据 |
+| `price_scope_error` | 价格时间和口径错误 |
+| `prediction_mislabeled` | 预测值未标注或混成真实数据 |
+| `overheat_ignored` | 热门方向过热风险未降级 |
+| `low_activity_overrated` | 低活跃方向被错误给高关注 |
+| `unsafe_instruction` | 出现无条件交易指令、仓位或收益承诺 |
+
+周度处理：
+
+1. 汇总 `feedback-log.jsonl` 和 `validate_run.sh` 失败结果。
+2. 统计 top failure types。
+3. 只对高频或 P0/P1 问题生成规则修改提案。
+4. 每个提案必须绑定失败样本、修改文件和新增/更新的校验规则。
+5. 人工确认后再修改 skill/reference；日常链路不自动改规则。
+
 ## 旧版单角色流程废弃
 
 以下做法禁止使用：

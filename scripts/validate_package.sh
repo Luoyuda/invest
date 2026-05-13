@@ -14,8 +14,10 @@ fail() {
 [[ -f SKILLS_INDEX.md ]] || fail "missing SKILLS_INDEX.md"
 [[ -d skills ]] || fail "missing skills/"
 [[ -d references ]] || fail "missing references/"
+[[ -f runtime/README.md ]] || fail "missing runtime/README.md"
+[[ -f scripts/validate_run.sh ]] || fail "missing scripts/validate_run.sh"
 
-for ref in references/a-share-data-sources.md references/evidence-schema.md references/sector-state.md references/skill-quality-rubric.md; do
+for ref in references/a-share-data-sources.md references/evidence-schema.md references/sector-state.md references/run-output-schema.md references/skill-quality-rubric.md; do
   [[ -f "$ref" ]] || fail "missing $ref"
 done
 
@@ -33,11 +35,21 @@ grep -q 'A 股板块状态账本' references/sector-state.md || fail "sector sta
 grep -q '热门方向' references/sector-state.md || fail "sector state ledger must define hot sectors"
 grep -q '低活跃方向' references/sector-state.md || fail "sector state ledger must define low-activity sectors"
 grep -q 'valid_until' references/sector-state.md || fail "sector state ledger must define validity window"
+grep -q 'overheat_risk' references/sector-state.md || fail "sector state ledger must define overheat_risk"
+grep -q 'recommendation_run' references/run-output-schema.md || fail "run output schema must define recommendation_run"
+grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime README must define sector-state artifact"
+grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
+grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
 grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
 grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read sector state ledger"
+grep -q 'references/run-output-schema.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read run output schema"
+grep -q 'runtime/sector-state.latest.json' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read runtime sector state"
+grep -q 'runtime/recommendation-runs/latest.json' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must generate recommendation run"
 grep -q 'references/sector-state.md' skills/a-share-sector-research/SKILL.md || fail "sector research must read sector state ledger"
 grep -q '板块热度评分' skills/a-share-sector-research/SKILL.md || fail "sector research must score sector heat"
+grep -q 'feedback-log.jsonl' self-improvement/SELF_IMPROVEMENT.md || fail "self improvement must consume feedback log"
+grep -q 'sector_state_stale' self-improvement/SELF_IMPROVEMENT.md || fail "self improvement must define failure taxonomy"
 
 skill_count=0
 while IFS= read -r skill_file; do
@@ -63,6 +75,7 @@ done < <(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
 
 grep -q 'for skill_dir in "$ROOT_DIR"/skills/\*' scripts/install_lobster_assistant.sh || fail "install script must copy all skill dirs"
 grep -q 'references/' scripts/install_lobster_assistant.sh || fail "install script must copy references"
+grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
 
 echo "Package validation passed"
 echo "Skills: $skill_count"
