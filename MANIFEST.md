@@ -41,6 +41,7 @@ References:
 
 - `references/a-share-data-sources.md`
 - `references/evidence-schema.md`
+- `references/sector-state.md`
 - `references/skill-quality-rubric.md`
 
 Self improvement:

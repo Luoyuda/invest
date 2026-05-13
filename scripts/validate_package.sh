@@ -15,7 +15,7 @@ fail() {
 [[ -d skills ]] || fail "missing skills/"
 [[ -d references ]] || fail "missing references/"
 
-for ref in references/a-share-data-sources.md references/evidence-schema.md references/skill-quality-rubric.md; do
+for ref in references/a-share-data-sources.md references/evidence-schema.md references/sector-state.md references/skill-quality-rubric.md; do
   [[ -f "$ref" ]] || fail "missing $ref"
 done
 
@@ -29,8 +29,14 @@ grep -q 'stability_tier' references/evidence-schema.md || fail "evidence schema 
 grep -q 'transform' references/evidence-schema.md || fail "evidence schema must include transform"
 grep -q '板块热度/行业强弱' references/a-share-data-sources.md || fail "data sources must define sector heat data sources"
 grep -q '## 1.1.1 板块热度与行业强弱口径' references/a-share-data-sources.md || fail "data sources must define sector heat methodology"
+grep -q 'A 股板块状态账本' references/sector-state.md || fail "sector state ledger must exist"
+grep -q '热门方向' references/sector-state.md || fail "sector state ledger must define hot sectors"
+grep -q '低活跃方向' references/sector-state.md || fail "sector state ledger must define low-activity sectors"
+grep -q 'valid_until' references/sector-state.md || fail "sector state ledger must define validity window"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
 grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
+grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read sector state ledger"
+grep -q 'references/sector-state.md' skills/a-share-sector-research/SKILL.md || fail "sector research must read sector state ledger"
 grep -q '板块热度评分' skills/a-share-sector-research/SKILL.md || fail "sector research must score sector heat"
 
 skill_count=0

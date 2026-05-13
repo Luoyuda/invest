@@ -13,6 +13,7 @@ description: Use this skill when the user asks to分析A股行业、赛道、板
 
 - `references/a-share-data-sources.md`
 - `references/evidence-schema.md`
+- `references/sector-state.md`
 
 ## Step 1: 明确研究范围
 
@@ -38,6 +39,8 @@ description: Use this skill when the user asks to分析A股行业、赛道、板
 
 行业/主题研究必须输出板块当前温度，供个股推荐 skill 先选赛道再选股票。
 
+优先按 `references/sector-state.md` 的规则读取运行态板块状态；如果状态缺失、过期或与当日证据冲突，再重新计算。热门和低活跃都应是最近一段时间沉淀的状态，不是单次回答里的临时印象，也不是仓库里的静态结论。
+
 评分维度：
 
 | 维度 | 必查点 |
@@ -50,7 +53,7 @@ description: Use this skill when the user asks to分析A股行业、赛道、板
 
 输出分级：
 
-- `强势板块`：相对强度、成交热度、催化和广度至少 3 项成立。
+- `热门方向/强势板块`：最近 5 个交易日左右相对强度、成交热度、催化和广度至少 3 项持续成立。
 - `景气改善板块`：基本面或政策催化明确，但资金和广度还在确认。
 - `低活跃板块`：缺少成交、广度或催化，不适合作为默认推荐方向。
 - `逆向观察板块`：估值或预期低位，但主流资金和热度未确认，只能左侧跟踪。
