@@ -19,6 +19,15 @@ for ref in references/a-share-data-sources.md references/evidence-schema.md refe
   [[ -f "$ref" ]] || fail "missing $ref"
 done
 
+grep -q '## 1.0 稳定性分层' references/a-share-data-sources.md || fail "data sources must define stability tiers"
+grep -q 'S1 原始/官方来源' references/a-share-data-sources.md || fail "data sources must prioritize official sources"
+grep -q '09:00 定时任务价格' references/a-share-data-sources.md || fail "data sources must define 09:00 price source priority"
+grep -q '## 1.0.1 数据整理不偏离原文' references/a-share-data-sources.md || fail "data sources must define non-deviation rules"
+grep -q 'raw_value' references/evidence-schema.md || fail "evidence schema must preserve raw_value"
+grep -q 'normalized_value' references/evidence-schema.md || fail "evidence schema must preserve normalized_value"
+grep -q 'stability_tier' references/evidence-schema.md || fail "evidence schema must include stability_tier"
+grep -q 'transform' references/evidence-schema.md || fail "evidence schema must include transform"
+
 skill_count=0
 while IFS= read -r skill_file; do
   skill_count=$((skill_count + 1))
