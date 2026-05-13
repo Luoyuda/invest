@@ -27,6 +27,11 @@ grep -q 'raw_value' references/evidence-schema.md || fail "evidence schema must 
 grep -q 'normalized_value' references/evidence-schema.md || fail "evidence schema must preserve normalized_value"
 grep -q 'stability_tier' references/evidence-schema.md || fail "evidence schema must include stability_tier"
 grep -q 'transform' references/evidence-schema.md || fail "evidence schema must include transform"
+grep -q '板块热度/行业强弱' references/a-share-data-sources.md || fail "data sources must define sector heat data sources"
+grep -q '## 1.1.1 板块热度与行业强弱口径' references/a-share-data-sources.md || fail "data sources must define sector heat methodology"
+grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
+grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
+grep -q '板块热度评分' skills/a-share-sector-research/SKILL.md || fail "sector research must score sector heat"
 
 skill_count=0
 while IFS= read -r skill_file; do
