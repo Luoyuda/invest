@@ -66,7 +66,7 @@ for idx, rec in enumerate(recommendations):
         errors.append(f"{ctx} must be an object")
         continue
 
-    for key in ["name", "code", "exchange", "sector", "sector_status", "attention_level", "price_reference", "evidence_ids"]:
+    for key in ["name", "code", "exchange", "sector", "sector_status", "attention_level", "price_reference", "evidence_ids", "participation_role", "execution_risk"]:
         require(rec, key, ctx)
 
     evidence_ids = rec.get("evidence_ids") or []
@@ -81,6 +81,26 @@ for idx, rec in enumerate(recommendations):
 
     sector_status = rec.get("sector_status")
     attention_level = rec.get("attention_level")
+    participation_role = rec.get("participation_role")
+    execution_risk = rec.get("execution_risk")
+    if participation_role != "recommendation":
+        errors.append(f"{ctx} recommendations must have participation_role=recommendation")
+    if execution_risk == "high":
+        errors.append(f"{ctx} high execution_risk cannot enter recommendations")
+    signals = rec.get("trading_signals") or {}
+    if isinstance(signals, dict):
+        if signals.get("opening_limit_up") or signals.get("quick_limit_up"):
+            errors.append(f"{ctx} opening/quick limit-up names must be sector_anchors, not recommendations")
+        try:
+            if float(signals.get("limit_up_count_5d") or 0) >= 2:
+                errors.append(f"{ctx} repeated recent limit-up names must be sector_anchors, not recommendations")
+        except (TypeError, ValueError):
+            pass
+        try:
+            if float(signals.get("short_term_gain_pct") or 0) >= 35:
+                errors.append(f"{ctx} excessive short-term gain names must be sector_anchors, not recommendations")
+        except (TypeError, ValueError):
+            pass
     if sector_status == "low_activity" and attention_level == "high":
         errors.append(f"{ctx} low_activity sector cannot have high attention")
 
@@ -113,6 +133,9 @@ for idx, rec in enumerate(recommendations):
 text = json.dumps(data, ensure_ascii=False)
 for pattern in [
     r"无条件买入",
+    r"建议买入",
+    r"建议卖出",
+    r"建议加仓",
     r"建议满仓",
     r"满仓",
     r"梭哈",

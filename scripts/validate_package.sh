@@ -111,7 +111,8 @@ for fixture in \
   fixtures/replay-prices.sample.csv \
   fixtures/run.invalid-low-activity-high.json \
   fixtures/run.invalid-0900-intraday.json \
-  fixtures/run.invalid-predicted-unmarked.json; do
+  fixtures/run.invalid-predicted-unmarked.json \
+  fixtures/run.invalid-limit-up-recommendation.json; do
   [[ -f "$fixture" ]] || fail "missing $fixture"
 done
 

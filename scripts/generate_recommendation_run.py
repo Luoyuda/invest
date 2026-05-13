@@ -39,6 +39,10 @@ def normalize_candidate(candidate: dict[str, Any], sectors: dict[str, dict[str, 
         "attention_level": candidate.get("attention_level", "medium"),
         "overheat_risk": candidate.get("overheat_risk") or sector.get("overheat_risk", "low"),
         "fresh_catalyst_evidence_id": candidate.get("fresh_catalyst_evidence_id"),
+        "participation_role": candidate.get("participation_role", "recommendation"),
+        "execution_risk": candidate.get("execution_risk", "unknown"),
+        "trading_signals": candidate.get("trading_signals", {}),
+        "exclusion_reason": candidate.get("exclusion_reason", []),
         "recommendation_reason": candidate.get("recommendation_reason", []),
         "key_data": candidate.get("key_data", []),
         "price_reference": price,
@@ -62,8 +66,10 @@ def main() -> int:
     now = datetime.now().astimezone()
 
     recommendations_input = candidates_payload.get("recommendations", [])
+    sector_anchors_input = candidates_payload.get("sector_anchors", [])
     evidence = candidates_payload.get("evidence", [])
     recommendations = [normalize_candidate(item, sectors) for item in recommendations_input]
+    sector_anchors = [normalize_candidate(item, sectors) for item in sector_anchors_input]
 
     payload = {
         "run_id": candidates_payload.get("run_id") or now.strftime("%Y%m%d-%H%M%S"),
@@ -84,6 +90,7 @@ def main() -> int:
             },
         ),
         "recommendations": recommendations,
+        "sector_anchors": sector_anchors,
         "evidence": evidence,
         "validation": {"status": "pending", "checked_at": None, "errors": [], "warnings": []},
     }

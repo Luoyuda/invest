@@ -21,6 +21,7 @@
     "disallow": ["intraday_realtime"]
   },
   "recommendations": [],
+  "sector_anchors": [],
   "evidence": [],
   "validation": {
     "status": "pending",
@@ -42,6 +43,15 @@
   "sector_status": "hot",
   "recommendation_type": "policy_catalyst",
   "attention_level": "high",
+  "participation_role": "recommendation",
+  "execution_risk": "low",
+  "trading_signals": {
+    "opening_limit_up": false,
+    "quick_limit_up": false,
+    "limit_up_count_5d": 0,
+    "short_term_gain_pct": 12.3
+  },
+  "exclusion_reason": [],
   "fresh_catalyst_evidence_id": "E3",
   "recommendation_reason": ["..."],
   "key_data": [
@@ -80,6 +90,17 @@
 - `medium`
 - `observe`
 
+允许的 `participation_role`：
+
+- `recommendation`: 可进入推荐清单的标的。
+- `sector_anchor`: 只用于说明主线强度，不进入推荐前 5。
+
+允许的 `execution_risk`：
+
+- `low`
+- `medium`
+- `high`
+
 允许的 `price_type`：
 
 - `previous_close`
@@ -117,6 +138,9 @@
 - `09:00` 任务不得使用 `intraday_realtime`。
 - `sector_status=low_activity` 不得给 `attention_level=high`。
 - `overheat_risk=high` 的板块不得直接给高关注，除非推荐项有 `fresh_catalyst_evidence_id`。
+- `recommendations[]` 只能包含 `participation_role=recommendation` 的标的。
+- `execution_risk=high` 的标的不得进入 `recommendations[]`。
+- 开盘即涨停、一字板、快速封板、近 5 日涨停 `>=2` 或近 10 日涨幅 `>=35%` 的标的，必须放入 `sector_anchors[]`，不得进入推荐前 5。
 - 不得输出无条件买入、卖出、加仓、仓位或收益承诺。
 
 ## 5. 生成工具

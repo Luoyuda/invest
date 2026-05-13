@@ -55,6 +55,7 @@ runtime/weekly-review.latest.json
 - `sector_state_ref`
 - `price_time_policy`
 - `recommendations`
+- `sector_anchors`
 - `evidence`
 - `validation`
 
@@ -67,12 +68,17 @@ runtime/weekly-review.latest.json
 - `sector_status`
 - `recommendation_type`
 - `attention_level`: `high | medium | observe`
+- `participation_role`: `recommendation`
+- `execution_risk`: `low | medium`
+- `trading_signals`: 开盘板、快速封板、近 5 日涨停次数、近 10 日涨幅等可参与性信号。
 - `recommendation_reason`
 - `key_data`
 - `price_reference`
 - `risks`
 - `invalid_if`
 - `evidence_ids`
+
+`sector_anchors` 用于保存强但普通投资者难参与的主线锚点，例如开盘即涨停、一字板、快速封板、近 5 日多次涨停或近 10 日涨幅过大的标的。它们可以证明板块热度，但不得进入 `recommendations` 前 5。
 
 ## 3. feedback-log.jsonl
 
@@ -98,6 +104,7 @@ runtime/weekly-review.latest.json
 -> 检查 valid_until
 -> 刷新上一交易日收盘价
 -> 检查重大催化/重大负面
+-> 将开盘板、快速封板、连续板、短期涨幅过大的标的降级为 sector_anchors
 -> 生成 recommendation-runs/latest.json
 -> scripts/validate_run.sh 校验
 -> 渲染最终推荐清单

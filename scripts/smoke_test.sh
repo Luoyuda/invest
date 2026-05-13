@@ -40,6 +40,15 @@ python3 scripts/generate_recommendation_run.py \
   --candidates "$tmpdir/candidates.latest.json" \
   --sector-state "$tmpdir/sector-state.latest.json" \
   --output "$tmpdir/latest.json"
+python3 - "$tmpdir/latest.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert data["recommendations"][0]["name"] == "样例股份"
+assert data["sector_anchors"][0]["name"] == "样例锚点"
+PY
 
 echo "[5/7] validate positive run"
 bash scripts/validate_run.sh "$tmpdir/latest.json"
@@ -48,7 +57,8 @@ echo "[6/7] validate negative fixtures"
 for fixture in \
   fixtures/run.invalid-low-activity-high.json \
   fixtures/run.invalid-0900-intraday.json \
-  fixtures/run.invalid-predicted-unmarked.json; do
+  fixtures/run.invalid-predicted-unmarked.json \
+  fixtures/run.invalid-limit-up-recommendation.json; do
   if bash scripts/validate_run.sh "$fixture" >/tmp/lobster-invalid.out 2>&1; then
     echo "ERROR: invalid fixture unexpectedly passed: $fixture" >&2
     cat /tmp/lobster-invalid.out >&2

@@ -91,3 +91,4 @@ Fixtures:
 - `fixtures/run.invalid-low-activity-high.json`
 - `fixtures/run.invalid-0900-intraday.json`
 - `fixtures/run.invalid-predicted-unmarked.json`
+- `fixtures/run.invalid-limit-up-recommendation.json`

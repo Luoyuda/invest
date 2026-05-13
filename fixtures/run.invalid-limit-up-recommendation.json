@@ -1,32 +1,32 @@
 {
-  "run_id": "fixture-valid-0900",
+  "run_id": "fixture-invalid-limit-up",
   "run_time": "2026-05-13T09:00:00+08:00",
+  "task_type": "daily_0900_recommendation",
+  "sector_state_ref": {
+    "path": "runtime/sector-state.latest.json",
+    "as_of": "2026-05-12",
+    "valid_until": "2026-05-19",
+    "status": "valid"
+  },
   "recommendations": [
     {
-      "name": "样例股份",
+      "name": "样例锚点",
       "code": "000001",
       "exchange": "SZSE",
       "sector": "AI算力",
       "sector_status": "hot",
       "attention_level": "high",
       "participation_role": "recommendation",
-      "execution_risk": "low",
+      "execution_risk": "high",
       "trading_signals": {
-        "opening_limit_up": false,
+        "opening_limit_up": true,
         "quick_limit_up": false,
-        "limit_up_count_5d": 0,
-        "short_term_gain_pct": 12
+        "limit_up_count_5d": 2,
+        "short_term_gain_pct": 48
       },
       "recommendation_type": "policy_catalyst",
-      "recommendation_reason": ["板块状态为热门方向且有政策催化"],
-      "key_data": [
-        {
-          "name": "PE-TTM",
-          "value": "20",
-          "unit": "倍",
-          "evidence_id": "E2"
-        }
-      ],
+      "recommendation_reason": ["开盘涨停仍错误进入推荐"],
+      "key_data": [],
       "price_reference": {
         "price_type": "previous_close",
         "value": 10.0,
@@ -56,16 +56,16 @@
     },
     {
       "id": "E2",
-      "source_name": "东方财富",
-      "source_type": "valuation",
+      "source_name": "板块数据",
+      "source_type": "sector",
       "stability_tier": "S3",
       "url": "https://example.com",
       "data_time": "2026-05-12",
-      "raw_value": "PE-TTM 20倍",
-      "normalized_value": 20,
-      "unit": "倍",
+      "raw_value": "热门",
+      "normalized_value": "hot",
+      "unit": "status",
       "transform": "无",
-      "supports": ["key_data.PE-TTM"]
+      "supports": ["sector_status"]
     }
   ]
 }
