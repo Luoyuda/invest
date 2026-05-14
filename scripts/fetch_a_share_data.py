@@ -270,6 +270,26 @@ def first_present(row: dict[str, Any], names: list[str]) -> Any:
     return None
 
 
+def json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [json_safe(item) for item in value]
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:  # noqa: BLE001 - best-effort serialization for provider raw fields
+            return str(value)
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:  # noqa: BLE001
+            return str(value)
+    return value
+
+
 def fetch_quote_adata(code: str) -> dict[str, Any]:
     try:
         import adata  # type: ignore[import-not-found]
@@ -311,7 +331,7 @@ def fetch_quote_adata(code: str) -> dict[str, Any]:
             "accessed_at": datetime.now().astimezone().isoformat(),
             "limitations": "Apache-2.0 开源 SDK，多数据源封装；底层仍可能依赖公开网页接口，需保留 provider_results 交叉校验。",
         },
-        "raw_fields": row,
+        "raw_fields": json_safe(row),
     }
 
 

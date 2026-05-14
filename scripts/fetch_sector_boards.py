@@ -157,6 +157,26 @@ def first_present(row: dict[str, Any], names: list[str]) -> Any:
     return None
 
 
+def json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [json_safe(item) for item in value]
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:  # noqa: BLE001 - best-effort serialization for provider raw fields
+            return str(value)
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:  # noqa: BLE001
+            return str(value)
+    return value
+
+
 def normalize_adata_board_row(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "board_code": first_present(row, ["concept_code", "plate_code", "code", "板块代码", "概念代码"]),
@@ -170,7 +190,7 @@ def normalize_adata_board_row(row: dict[str, Any]) -> dict[str, Any]:
         "fall_count": normalize_number(first_present(row, ["fall_count", "下跌家数"])),
         "leading_stock": first_present(row, ["leader_stock", "leading_stock", "领涨股"]),
         "leading_stock_pct_change": normalize_number(first_present(row, ["leader_stock_pct", "leading_stock_pct_change", "领涨股涨跌幅"])),
-        "raw_fields": row,
+        "raw_fields": json_safe(row),
     }
 
 
@@ -232,7 +252,7 @@ def main() -> int:
     args = parser.parse_args()
 
     errors: list[dict[str, str]] = []
-    attempts = ["adata_east", "eastmoney", "akshare_ths", "adata_ths"] if args.provider == "auto" else [args.provider]
+    attempts = ["adata_east", "eastmoney", "akshare_ths"] if args.provider == "auto" else [args.provider]
     payload: dict[str, Any] | None = None
     for provider in attempts:
         try:
