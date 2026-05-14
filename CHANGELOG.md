@@ -17,6 +17,7 @@
 - adata/AKShare 返回的原始字段会先转换成 JSON-safe 值，避免 `pandas.Timestamp` 等对象导致运行态产物写入失败。
 - 新增 `sohu` 板块快照兜底 provider，直接读取搜狐证券公开网页异步接口，无需安装 SDK。
 - `fetch_sector_boards.py --provider auto` 默认尝试 `adata_east`、`eastmoney`、`sohu`、`akshare_ths`；`adata_ths` 保留为显式 provider，避免部分环境的 native 依赖问题拖慢 cron。
+- 新增 `scripts/check_connectivity.py`，一键检查包结构、默认行情、概念/行业板块和新闻搜索连通性，并输出 JSON/TXT 报告。
 - 行情输出新增：
   - `provider_results`：每个 provider 的成功/失败、错误信息和原始 quote。
   - `quality.status`：`passed | conflict | single_source | failed`。

@@ -67,6 +67,7 @@ Scripts:
 
 - `scripts/fetch_a_share_data.py`
 - `scripts/fetch_sector_boards.py`
+- `scripts/check_connectivity.py`
 - `scripts/search_news.py`
 - `scripts/build_sector_metrics.py`
 - `scripts/generate_sector_state.py`

@@ -122,6 +122,7 @@ runtime/weekly-review.latest.json
 ```text
 scripts/fetch_a_share_data.py          # 多源获取 A 股行情，默认新浪+腾讯快路径，可选东方财富/adata
 scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/AKShare 板块快照，空结果默认降级不阻断
+scripts/check_connectivity.py          # 一键检查包结构、行情、概念/行业板块、新闻搜索连通性
 scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
@@ -138,3 +139,13 @@ scripts/smoke_test_installed.sh        # 安装目录 smoke test
 ```
 
 这些脚本不替代专业判断。它们负责把运行态产物结构化、可校验、可复盘。
+
+连通性检查：
+
+```bash
+python3 scripts/check_connectivity.py \
+  --output runtime/connectivity-check.latest.json \
+  --text-output runtime/connectivity-check.latest.txt
+```
+
+检查项包括包结构、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
