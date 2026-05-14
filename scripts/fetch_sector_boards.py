@@ -96,9 +96,13 @@ def fetch_eastmoney_boards(kind: str, limit: int) -> dict[str, Any]:
                 "leading_stock_pct_change": normalize_number(item.get("f136")),
             }
         )
+    status = "passed" if boards else "degraded"
+    warnings = [] if boards else ["eastmoney board endpoint returned empty board list"]
     return {
         "provider": "eastmoney",
         "kind": kind,
+        "status": status,
+        "warnings": warnings,
         "source": {
             "source_name": "东方财富",
             "source_type": "sector_board",
@@ -125,9 +129,13 @@ def fetch_akshare_ths_boards(kind: str, limit: int) -> dict[str, Any]:
         raise ValueError(f"unsupported Tonghuashun board kind: {kind}")
 
     records = frame.head(limit).to_dict(orient="records")
+    status = "passed" if records else "degraded"
+    warnings = [] if records else ["akshare_ths returned empty board list"]
     return {
         "provider": "akshare_ths",
         "kind": kind,
+        "status": status,
+        "warnings": warnings,
         "source": {
             "source_name": "AKShare-同花顺",
             "source_type": "sector_board",
@@ -142,21 +150,34 @@ def fetch_akshare_ths_boards(kind: str, limit: int) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch A-share sector board snapshots")
-    parser.add_argument("--provider", choices=["eastmoney", "akshare_ths"], default="eastmoney")
+    parser.add_argument("--provider", choices=["auto", "eastmoney", "akshare_ths"], default="auto")
     parser.add_argument("--kind", choices=["industry", "concept"], default="concept")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--output", "-o", default="runtime/market-data/sector-boards.latest.json")
+    parser.add_argument("--require-results", action="store_true", help="Exit non-zero when no board data is available")
     args = parser.parse_args()
 
     errors: list[dict[str, str]] = []
-    try:
-        if args.provider == "eastmoney":
-            payload = fetch_eastmoney_boards(args.kind, args.limit)
-        else:
-            payload = fetch_akshare_ths_boards(args.kind, args.limit)
-    except Exception as exc:  # noqa: BLE001 - command-line diagnostics
-        payload = {"provider": args.provider, "kind": args.kind, "boards": []}
-        errors.append({"provider": args.provider, "error": str(exc)})
+    attempts = ["eastmoney", "akshare_ths"] if args.provider == "auto" else [args.provider]
+    payload: dict[str, Any] | None = None
+    for provider in attempts:
+        try:
+            candidate = fetch_eastmoney_boards(args.kind, args.limit) if provider == "eastmoney" else fetch_akshare_ths_boards(args.kind, args.limit)
+            if candidate.get("boards"):
+                payload = candidate
+                break
+            errors.append({"provider": provider, "error": "empty board list"})
+            payload = payload or candidate
+        except Exception as exc:  # noqa: BLE001 - command-line diagnostics
+            errors.append({"provider": provider, "error": str(exc)})
+    if payload is None:
+        payload = {
+            "provider": args.provider,
+            "kind": args.kind,
+            "status": "failed",
+            "warnings": ["all sector board providers failed"],
+            "boards": [],
+        }
 
     payload["generated_at"] = datetime.now().astimezone().isoformat()
     payload["errors"] = errors
@@ -165,9 +186,11 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote {output}")
+    print(f"Status: {payload.get('status', 'unknown')}")
     print(f"Boards: {len(payload.get('boards') or [])}")
     if errors:
         print(f"Errors: {len(errors)}", file=sys.stderr)
+    if args.require_results and not payload.get("boards"):
         return 2
     return 0
 

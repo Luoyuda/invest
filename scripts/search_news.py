@@ -11,11 +11,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from html import unescape
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
@@ -26,6 +28,13 @@ A_SHARE_SITE_SCOPES = {
     "stcn": "site:stcn.com",
     "eastmoney": "site:finance.eastmoney.com",
     "sina_finance": "site:finance.sina.com.cn",
+}
+
+A_SHARE_HOMEPAGES = {
+    "cls": "https://www.cls.cn/telegraph",
+    "stcn": "https://www.stcn.com/",
+    "eastmoney": "https://finance.eastmoney.com/",
+    "sina_finance": "https://finance.sina.com.cn/",
 }
 
 
@@ -57,6 +66,15 @@ def get_text(url: str, params: dict[str, str], timeout: float) -> str:
     request = urllib.request.Request(
         f"{url}?{urllib.parse.urlencode(params)}",
         headers={"Accept": "application/rss+xml, application/xml, text/xml", "User-Agent": "lobster-invest/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read().decode("utf-8", "ignore")
+
+
+def get_page(url: str, timeout: float) -> str:
+    request = urllib.request.Request(
+        url,
+        headers={"Accept": "text/html,application/xhtml+xml", "User-Agent": "lobster-invest/1.0", "Connection": "close"},
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read().decode("utf-8", "ignore")
@@ -112,6 +130,59 @@ def search_a_share_rss(query: str, timeout: float, max_results: int) -> list[dic
     return results
 
 
+def strip_tags(value: str) -> str:
+    return re.sub(r"<[^>]+>", "", unescape(value or "")).strip()
+
+
+def search_a_share_homepages(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
+    query_terms = [item for item in re.split(r"\s+", query) if item]
+    results = []
+    seen: set[tuple[str, str]] = set()
+    per_site_timeout = max(0.5, timeout / max(len(A_SHARE_HOMEPAGES), 1))
+    for site_name, url in A_SHARE_HOMEPAGES.items():
+        html = get_page(url, per_site_timeout)
+        title = strip_tags(re.search(r"<title[^>]*>(.*?)</title>", html, flags=re.I | re.S).group(1)) if re.search(r"<title[^>]*>(.*?)</title>", html, flags=re.I | re.S) else site_name
+        if title:
+            key = (site_name, title)
+            if key not in seen:
+                seen.add(key)
+                results.append(
+                    {
+                        "title": title,
+                        "url": url,
+                        "snippet": "财经首页快照；用于搜索空结果时的降级入口，需进入原文页再核验事实。",
+                        "published_at": None,
+                        "provider": "a_share_homepages",
+                        "source_scope": site_name,
+                    }
+                )
+        for match in re.finditer(r"<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", html, flags=re.I | re.S):
+            href, raw_text = match.groups()
+            text = strip_tags(raw_text)
+            if len(text) < 8:
+                continue
+            if query_terms and not any(term in text for term in query_terms):
+                continue
+            full_url = urllib.parse.urljoin(url, href)
+            key = (site_name, full_url)
+            if key in seen:
+                continue
+            seen.add(key)
+            results.append(
+                {
+                    "title": text,
+                    "url": full_url,
+                    "snippet": "财经首页链接；用于搜索空结果时的降级入口，需进入原文页再核验事实。",
+                    "published_at": None,
+                    "provider": "a_share_homepages",
+                    "source_scope": site_name,
+                }
+            )
+            if len(results) >= max_results:
+                return results
+    return results[:max_results]
+
+
 def search_tavily(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
     api_key = os.environ.get("TAVILY_API_KEY", "")
     if not api_key:
@@ -165,6 +236,7 @@ def search_brave(query: str, timeout: float, max_results: int) -> list[dict[str,
 
 PROVIDERS = {
     "a_share_rss": search_a_share_rss,
+    "a_share_homepages": search_a_share_homepages,
     "google_news_rss": search_google_news_rss,
     "brave": search_brave,
     "tavily": search_tavily,
@@ -182,7 +254,7 @@ def parse_providers(value: str) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search news with provider fallback")
     parser.add_argument("query", help="Search query")
-    parser.add_argument("--providers", default="a_share_rss,brave,tavily")
+    parser.add_argument("--providers", default="a_share_rss,a_share_homepages,tavily,google_news_rss,brave")
     parser.add_argument("--timeout", type=float, default=8.0, help="Per-provider timeout seconds")
     parser.add_argument("--overall-timeout", type=float, default=20.0, help="Overall search budget seconds")
     parser.add_argument("--max-results", type=int, default=5)
@@ -207,7 +279,14 @@ def main() -> int:
         try:
             results = PROVIDERS[provider](args.query, timeout, args.max_results)
             duration_ms = round((time.monotonic() - provider_started) * 1000)
-            provider_results.append({"provider": provider, "status": "ok", "duration_ms": duration_ms, "count": len(results)})
+            provider_results.append(
+                {
+                    "provider": provider,
+                    "status": "ok" if results else "empty",
+                    "duration_ms": duration_ms,
+                    "count": len(results),
+                }
+            )
             for item in results:
                 url = item.get("url")
                 if not url or url in seen_urls:
