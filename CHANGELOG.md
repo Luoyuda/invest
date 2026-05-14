@@ -15,7 +15,8 @@
   - `adata_east`：东方财富概念板块快照可选 SDK provider。
   - `adata_ths`：同花顺概念板块快照可选 SDK provider。
 - adata/AKShare 返回的原始字段会先转换成 JSON-safe 值，避免 `pandas.Timestamp` 等对象导致运行态产物写入失败。
-- `fetch_sector_boards.py --provider auto` 默认只尝试 `adata_east`、`eastmoney`、`akshare_ths`；`adata_ths` 保留为显式 provider，避免部分环境的 native 依赖问题拖慢 cron。
+- 新增 `sohu` 板块快照兜底 provider，直接读取搜狐证券公开网页异步接口，无需安装 SDK。
+- `fetch_sector_boards.py --provider auto` 默认尝试 `adata_east`、`eastmoney`、`sohu`、`akshare_ths`；`adata_ths` 保留为显式 provider，避免部分环境的 native 依赖问题拖慢 cron。
 - 行情输出新增：
   - `provider_results`：每个 provider 的成功/失败、错误信息和原始 quote。
   - `quality.status`：`passed | conflict | single_source | failed`。

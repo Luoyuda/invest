@@ -11,7 +11,9 @@ and Tonghuashun concept board snapshots.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import re
 import sys
 import time
 import urllib.parse
@@ -24,6 +26,11 @@ from typing import Any
 EASTMONEY_BOARD_KINDS = {
     "industry": "m:90+t:2",
     "concept": "m:90+t:3",
+}
+
+SOHU_BOARD_IDS = {
+    "industry": "1631",
+    "concept": "1630",
 }
 
 
@@ -51,6 +58,33 @@ def fetch_json(url: str, params: dict[str, str], timeout: int = 12, retries: int
     raise last_exc
 
 
+def fetch_text(url: str, timeout: int = 8, retries: int = 1) -> str:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) lobster-invest/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Referer": "https://q.stock.sohu.com/cn/bk.shtml",
+            "Connection": "close",
+        },
+    )
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw = response.read()
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                encoding = "gbk" if "gbk" in content_type or "gb2312" in content_type else "utf-8"
+                return raw.decode(encoding, "ignore")
+        except Exception as exc:  # noqa: BLE001 - provider diagnostics must retain original failure
+            last_exc = exc
+            if attempt < retries:
+                time.sleep(0.3 * (attempt + 1))
+    assert last_exc is not None
+    raise last_exc
+
+
 def normalize_number(value: Any) -> float | int | str | None:
     if value in (None, "-", ""):
         return None
@@ -61,6 +95,12 @@ def normalize_number(value: Any) -> float | int | str | None:
     if number.is_integer():
         return int(number)
     return round(number, 4)
+
+
+def parse_percent(value: Any) -> float | int | str | None:
+    if isinstance(value, str):
+        value = value.strip().rstrip("%")
+    return normalize_number(value)
 
 
 def fetch_eastmoney_boards(kind: str, limit: int) -> dict[str, Any]:
@@ -147,6 +187,57 @@ def fetch_akshare_ths_boards(kind: str, limit: int) -> dict[str, Any]:
             "limitations": "通过 AKShare 封装同花顺数据；字段依赖上游网页结构，不视为官方稳定接口。",
         },
         "boards": records,
+    }
+
+
+def fetch_sohu_boards(kind: str, limit: int) -> dict[str, Any]:
+    board_id = SOHU_BOARD_IDS[kind]
+    url = f"https://q.stock.sohu.com/pl/pl-{board_id}.html"
+    text = fetch_text(url)
+    match = re.search(r"PEAK_ODIA\((\[.*\])\)", text, re.S)
+    if not match:
+        raise RuntimeError(f"unexpected Sohu board response for {kind}")
+    payload = ast.literal_eval(match.group(1))
+    if not payload or payload[0] != "pllist":
+        raise RuntimeError(f"incomplete Sohu board response for {kind}")
+
+    boards = []
+    for item in payload[1 : limit + 1]:
+        if not isinstance(item, list) or len(item) < 13:
+            continue
+        boards.append(
+            {
+                "board_code": item[0],
+                "name": item[1],
+                "company_count": normalize_number(item[2]),
+                "average_price": normalize_number(item[3]),
+                "change": normalize_number(item[4]),
+                "pct_change": parse_percent(item[5]),
+                "volume": normalize_number(item[6]),
+                "turnover": normalize_number(item[7]),
+                "leading_stock_code": str(item[8]).replace("cn_", ""),
+                "leading_stock": item[9],
+                "leading_stock_price": normalize_number(item[10]),
+                "leading_stock_change": normalize_number(item[11]),
+                "leading_stock_pct_change": parse_percent(item[12]),
+            }
+        )
+    status = "passed" if boards else "degraded"
+    warnings = [] if boards else ["sohu board endpoint returned empty board list"]
+    return {
+        "provider": "sohu",
+        "kind": kind,
+        "status": status,
+        "warnings": warnings,
+        "source": {
+            "source_name": "搜狐证券",
+            "source_type": "sector_board",
+            "stability_tier": "S4",
+            "url": url,
+            "accessed_at": datetime.now().astimezone().isoformat(),
+            "limitations": "公开网页异步板块接口，无官方稳定承诺；用于东方财富/SDK 不可用时的实时兜底，关键结论需交叉校验。",
+        },
+        "boards": boards,
     }
 
 
@@ -237,6 +328,8 @@ def fetch_provider(provider: str, kind: str, limit: int) -> dict[str, Any]:
         return fetch_eastmoney_boards(kind, limit)
     if provider == "akshare_ths":
         return fetch_akshare_ths_boards(kind, limit)
+    if provider == "sohu":
+        return fetch_sohu_boards(kind, limit)
     if provider in {"adata_east", "adata_ths"}:
         return fetch_adata_boards(provider, kind, limit)
     raise ValueError(f"unknown sector board provider: {provider}")
@@ -244,7 +337,7 @@ def fetch_provider(provider: str, kind: str, limit: int) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch A-share sector board snapshots")
-    parser.add_argument("--provider", choices=["auto", "eastmoney", "akshare_ths", "adata_east", "adata_ths"], default="auto")
+    parser.add_argument("--provider", choices=["auto", "eastmoney", "sohu", "akshare_ths", "adata_east", "adata_ths"], default="auto")
     parser.add_argument("--kind", choices=["industry", "concept"], default="concept")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--output", "-o", default="runtime/market-data/sector-boards.latest.json")
@@ -252,7 +345,7 @@ def main() -> int:
     args = parser.parse_args()
 
     errors: list[dict[str, str]] = []
-    attempts = ["adata_east", "eastmoney", "akshare_ths"] if args.provider == "auto" else [args.provider]
+    attempts = ["adata_east", "eastmoney", "sohu", "akshare_ths"] if args.provider == "auto" else [args.provider]
     payload: dict[str, Any] | None = None
     for provider in attempts:
         try:

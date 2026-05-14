@@ -46,6 +46,7 @@ grep -q '09:00 定时任务价格' references/a-share-data-sources.md || fail "d
 grep -q '本仓库 Provider Registry' references/a-share-data-sources.md || fail "data sources must define provider registry"
 grep -q 'sina' references/a-share-data-sources.md || fail "data sources must document Sina quote provider"
 grep -q 'adata' references/a-share-data-sources.md || fail "data sources must document optional adata provider"
+grep -q 'sohu' references/a-share-data-sources.md || fail "data sources must document Sohu board fallback provider"
 grep -q 'akshare_ths' references/a-share-data-sources.md || fail "data sources must document optional Tonghuashun provider"
 grep -q '## 1.0.1 数据整理不偏离原文' references/a-share-data-sources.md || fail "data sources must define non-deviation rules"
 grep -q 'raw_value' references/evidence-schema.md || fail "evidence schema must preserve raw_value"

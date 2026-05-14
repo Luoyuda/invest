@@ -121,7 +121,7 @@ runtime/weekly-review.latest.json
 
 ```text
 scripts/fetch_a_share_data.py          # 多源获取 A 股行情，默认新浪+腾讯快路径，可选东方财富/adata
-scripts/fetch_sector_boards.py         # 获取东方财富/可选 adata/AKShare 板块快照，空结果默认降级不阻断
+scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/AKShare 板块快照，空结果默认降级不阻断
 scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json

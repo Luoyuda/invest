@@ -30,6 +30,7 @@
 | `adata_east` | 东方财富概念板块快照 | S2 | 可选安装 adata 后调用东方财富概念封装接口 | 用于板块热度补充；返回空结果时自动降级 |
 | `adata_ths` | 同花顺概念板块快照 | S2 | 可选安装 adata 后调用同花顺概念封装接口 | 用于板块热度补充；不等同同花顺官方稳定 API |
 | `akshare_ths` | 同花顺行业/概念板块快照 | S3 | 可选安装 AKShare 后调用同花顺相关封装接口 | 不视为同花顺官方稳定 API；用于板块热度补充和交叉观察 |
+| `sohu` | 行业/概念板块实时快照兜底 | S4 | 直接调用搜狐证券公开网页异步接口 | 无需依赖；用于东方财富/SDK 不可用时保底产出，关键结论必须交叉校验 |
 | `a_share_rss` | A 股财经新闻发现 | S3 | 无需 API key；对财联社、证券时报、东方财富、新浪财经等做站点定向 RSS 查询 | 默认免费搜索源；只作为新闻发现入口，核心事实仍需回到原文核验 |
 | `a_share_homepages` | A 股财经首页兜底 | S3 | 无需 API key；抓取财联社、证券时报、东方财富、新浪财经首页 | 当 RSS 返回空结果时兜底，结果是入口线索，不是已核验事实 |
 | `google_news_rss` | 通用新闻搜索 | S4 | 无需 API key 的 RSS | 仅作兜底，不作为 A 股默认搜索能力 |
@@ -51,6 +52,7 @@ python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent,eastmoney
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers adata,sina,tencent
 python3 scripts/fetch_sector_boards.py --provider eastmoney --kind concept
+python3 scripts/fetch_sector_boards.py --provider sohu --kind concept
 python3 scripts/fetch_sector_boards.py --provider adata_east --kind concept
 python3 scripts/fetch_sector_boards.py --provider adata_ths --kind concept
 python3 scripts/fetch_sector_boards.py --provider akshare_ths --kind industry
