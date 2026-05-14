@@ -1,0 +1,4 @@
+# Local runtime logs and generated check artifacts
+log/
+skill-test-results/
+
