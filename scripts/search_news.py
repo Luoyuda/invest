@@ -2,7 +2,8 @@
 """Search market news with timeout budgets and provider fallback.
 
 The script records provider failures instead of blocking downstream workflows.
-It supports Brave and Tavily when their API keys are configured.
+It uses free RSS feeds by default, and supports Brave/Tavily when API keys are
+configured.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 
 def now_iso() -> str:
@@ -41,6 +43,36 @@ def get_json(url: str, params: dict[str, str], headers: dict[str, str], timeout:
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def get_text(url: str, params: dict[str, str], timeout: float) -> str:
+    request = urllib.request.Request(
+        f"{url}?{urllib.parse.urlencode(params)}",
+        headers={"Accept": "application/rss+xml, application/xml, text/xml", "User-Agent": "lobster-invest/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read().decode("utf-8", "ignore")
+
+
+def search_google_news_rss(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
+    text = get_text(
+        "https://news.google.com/rss/search",
+        {"q": query, "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"},
+        timeout,
+    )
+    root = ElementTree.fromstring(text)
+    results = []
+    for item in root.findall(".//item")[:max_results]:
+        results.append(
+            {
+                "title": item.findtext("title"),
+                "url": item.findtext("link"),
+                "snippet": item.findtext("description"),
+                "published_at": item.findtext("pubDate"),
+                "provider": "google_news_rss",
+            }
+        )
+    return results
 
 
 def search_tavily(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
@@ -95,6 +127,7 @@ def search_brave(query: str, timeout: float, max_results: int) -> list[dict[str,
 
 
 PROVIDERS = {
+    "google_news_rss": search_google_news_rss,
     "brave": search_brave,
     "tavily": search_tavily,
 }
@@ -111,7 +144,7 @@ def parse_providers(value: str) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search news with provider fallback")
     parser.add_argument("query", help="Search query")
-    parser.add_argument("--providers", default="brave,tavily")
+    parser.add_argument("--providers", default="google_news_rss,brave,tavily")
     parser.add_argument("--timeout", type=float, default=8.0, help="Per-provider timeout seconds")
     parser.add_argument("--overall-timeout", type=float, default=20.0, help="Overall search budget seconds")
     parser.add_argument("--max-results", type=int, default=5)

@@ -5,7 +5,7 @@
 ### 数据源与 Provider Registry
 
 - 将 `scripts/fetch_a_share_data.py` 从单次轻量行情抓取升级为多 provider registry。
-- 新增 `scripts/search_news.py`，支持 Brave/Tavily 搜索 provider、单 provider 超时、总超时预算和失败降级。
+- 新增 `scripts/search_news.py`，默认使用不需要 API key 的新闻 RSS 源；Brave/Tavily 仅作为可选 API key provider，支持单 provider 超时、总超时预算和失败降级。
 - 默认 provider 为 `eastmoney,tencent`：
   - `eastmoney`：东方财富公开网页行情接口，按 S3 主源处理。
   - `tencent`：腾讯公开网页行情接口，按 S4 兜底和交叉校验处理。
