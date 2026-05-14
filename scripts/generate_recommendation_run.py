@@ -91,6 +91,8 @@ def main() -> int:
         ),
         "recommendations": recommendations,
         "sector_anchors": sector_anchors,
+        "candidate_pool_audit": candidates_payload.get("candidate_pool_audit", {}),
+        "selection_policy": candidates_payload.get("selection_policy", {}),
         "evidence": evidence,
         "validation": {"status": "pending", "checked_at": None, "errors": [], "warnings": []},
     }

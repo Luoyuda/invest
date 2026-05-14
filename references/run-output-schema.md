@@ -22,6 +22,18 @@
   },
   "recommendations": [],
   "sector_anchors": [],
+  "candidate_pool_audit": {
+    "pool_size": 0,
+    "sector_counts": {},
+    "candidate_source_counts": {},
+    "preferred_sectors": [],
+    "missing_preferred_sectors": [],
+    "warnings": []
+  },
+  "selection_policy": {
+    "max_per_sector": 2,
+    "reason": "limit availability bias from a manually or partially collected stock pool"
+  },
   "evidence": [],
   "validation": {
     "status": "pending",
@@ -141,6 +153,8 @@
 - `recommendations[]` 只能包含 `participation_role=recommendation` 的标的。
 - `execution_risk=high` 的标的不得进入 `recommendations[]`。
 - 开盘即涨停、一字板、快速封板、近 5 日涨停 `>=2` 或近 10 日涨幅 `>=35%` 的标的，必须放入 `sector_anchors[]`，不得进入推荐前 5。
+- `candidate_pool_audit.missing_preferred_sectors` 非空时，最终回答必须说明候选池覆盖不足，不能把“没拉到数据的方向”当作已经排除。
+- 推荐清单默认同一板块不超过 2 只，除非候选池覆盖审计能证明其它热门/改善方向确实没有合格标的。
 - 不得输出无条件买入、卖出、加仓、仓位或收益承诺。
 
 ## 5. 生成工具

@@ -22,6 +22,7 @@ fail() {
 for script in \
   scripts/fetch_a_share_data.py \
   scripts/fetch_sector_boards.py \
+  scripts/search_news.py \
   scripts/build_sector_metrics.py \
   scripts/generate_sector_state.py \
   scripts/collect_catalysts.py \
@@ -61,8 +62,10 @@ grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime RE
 grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
 grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
 grep -q 'runtime/market-data/sector-boards.latest.json' runtime/README.md || fail "runtime README must define sector board artifact"
+grep -q 'runtime/search-results.latest.json' runtime/README.md || fail "runtime README must define search results artifact"
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
 grep -q 'fetch_sector_boards.py' runtime/README.md || fail "runtime README must list sector board fetcher"
+grep -q 'search_news.py' runtime/README.md || fail "runtime README must list search news script"
 grep -q 'build_sector_metrics.py' runtime/README.md || fail "runtime README must list sector metrics builder"
 grep -q 'generate_candidates.py' runtime/README.md || fail "runtime README must list candidate generator"
 grep -q 'replay_recommendations.py' runtime/README.md || fail "runtime README must list replay script"
@@ -74,10 +77,12 @@ grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.m
 grep -q 'references/run-output-schema.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read run output schema"
 grep -q 'runtime/sector-state.latest.json' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read runtime sector state"
 grep -q 'runtime/recommendation-runs/latest.json' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must generate recommendation run"
+grep -q '候选池覆盖' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must audit candidate pool coverage"
 grep -q 'references/sector-state.md' skills/a-share-sector-research/SKILL.md || fail "sector research must read sector state ledger"
 grep -q '板块热度评分' skills/a-share-sector-research/SKILL.md || fail "sector research must score sector heat"
 grep -q 'feedback-log.jsonl' self-improvement/SELF_IMPROVEMENT.md || fail "self improvement must consume feedback log"
 grep -q 'sector_state_stale' self-improvement/SELF_IMPROVEMENT.md || fail "self improvement must define failure taxonomy"
+grep -q '默认推荐偏好' USER_PROFILE.md || fail "user profile must define recommendation preference"
 
 skill_count=0
 while IFS= read -r skill_file; do

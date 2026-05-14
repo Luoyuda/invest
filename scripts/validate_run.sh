@@ -34,6 +34,11 @@ def require(obj, key, ctx):
 for key in ["run_id", "run_time", "sector_state_ref", "recommendations", "evidence"]:
     require(data, key, "run")
 
+pool_audit = data.get("candidate_pool_audit") or {}
+if pool_audit:
+    for warning in pool_audit.get("warnings") or []:
+        warnings.append(f"candidate_pool_audit: {warning}")
+
 recommendations = data.get("recommendations") or []
 evidence = data.get("evidence") or []
 
@@ -160,4 +165,8 @@ if errors:
 print("Run validation passed")
 print(f"Recommendations: {len(recommendations)}")
 print(f"Evidence: {len(evidence_by_id)}")
+if warnings:
+    print("Warnings:")
+    for warning in warnings:
+        print(f"- {warning}")
 PY

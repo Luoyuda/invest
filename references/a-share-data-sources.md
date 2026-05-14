@@ -26,6 +26,8 @@
 | `eastmoney` | 个股行情、行业/概念板块快照 | S3 | 直接调用东方财富公开网页接口 | 默认主源；必须保留字段、数据时间、访问时间和限制说明 |
 | `tencent` | 个股行情交叉校验和兜底 | S4 | 直接调用腾讯公开网页行情接口 | 不单独支撑高确定性推荐；用于与东方财富核对价格 |
 | `akshare_ths` | 同花顺行业/概念板块快照 | S3 | 可选安装 AKShare 后调用同花顺相关封装接口 | 不视为同花顺官方稳定 API；用于板块热度补充和交叉观察 |
+| `brave` | 新闻/网页搜索 | S3 | 需要 `BRAVE_API_KEY` | 搜索源之一；超时或未配置时不得阻断全链路 |
+| `tavily` | 新闻/网页搜索 | S3 | 需要 `TAVILY_API_KEY` | 搜索源之一；超时或未配置时不得阻断全链路 |
 
 东方财富和同花顺的判断：
 
@@ -39,9 +41,11 @@
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers eastmoney,tencent
 python3 scripts/fetch_sector_boards.py --provider eastmoney --kind concept
 python3 scripts/fetch_sector_boards.py --provider akshare_ths --kind industry
+python3 scripts/search_news.py "A股 半导体 政策 催化" --providers brave,tavily
 ```
 
 `akshare_ths` 是可选能力；没有安装 AKShare 时脚本必须记录错误并降级，不能编造同花顺数据。
+搜索 provider 也是可选能力；没有配置 key 或超时时，脚本必须记录 `provider_results` 并输出 `status=degraded`，后续推荐只能基于已核验来源降级输出。
 
 ## 1.0 稳定性分层
 

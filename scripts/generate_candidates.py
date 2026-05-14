@@ -27,6 +27,14 @@ def sector_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {item.get("name"): item for item in state.get("sectors", []) if item.get("name")}
 
 
+def preferred_sectors(state: dict[str, Any]) -> list[str]:
+    result = []
+    for item in state.get("sectors", []):
+        if item.get("status") in {"hot", "improving"} and item.get("name"):
+            result.append(item["name"])
+    return result
+
+
 def parse_bool(value: str | None) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "是"}
 
@@ -107,6 +115,31 @@ def row_score(row: dict[str, str], sector: dict[str, Any]) -> float:
     return score
 
 
+def build_pool_audit(rows: list[tuple[float, dict[str, str], dict[str, Any]]], sectors: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    sector_counts: dict[str, int] = {}
+    source_counts: dict[str, int] = {}
+    for _, row, _ in rows:
+        sector_name = row.get("sector") or "unknown"
+        sector_counts[sector_name] = sector_counts.get(sector_name, 0) + 1
+        source = row.get("candidate_source") or row.get("price_source") or "manual"
+        source_counts[source] = source_counts.get(source, 0) + 1
+    preferred = preferred_sectors({"sectors": list(sectors.values())})
+    missing_preferred = [name for name in preferred if name not in sector_counts]
+    warnings = []
+    if missing_preferred:
+        warnings.append("preferred sectors missing from stock pool; recommendation may have availability bias")
+    if len(sector_counts) < 3:
+        warnings.append("stock pool covers fewer than 3 sectors; diversify upstream candidate collection")
+    return {
+        "pool_size": len(rows),
+        "sector_counts": sector_counts,
+        "candidate_source_counts": source_counts,
+        "preferred_sectors": preferred,
+        "missing_preferred_sectors": missing_preferred,
+        "warnings": warnings,
+    }
+
+
 def build_item(
     row: dict[str, str],
     sector: dict[str, Any],
@@ -154,9 +187,11 @@ def main() -> int:
     parser.add_argument("--sector-state", default="runtime/sector-state.latest.json")
     parser.add_argument("--output", "-o", default="runtime/candidates.latest.json")
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--max-per-sector", type=int, default=2)
     args = parser.parse_args()
 
-    sectors = sector_map(load_json(args.sector_state))
+    sector_state = load_json(args.sector_state)
+    sectors = sector_map(sector_state)
     rows = []
     with Path(args.stocks_csv).open("r", encoding="utf-8-sig", newline="") as file:
         reader = csv.DictReader(file)
@@ -172,6 +207,7 @@ def main() -> int:
     recommendations = []
     sector_anchors = []
     selected_count = 0
+    selected_sector_counts: dict[str, int] = {}
     for idx, (score, row, sector) in enumerate(rows, start=1):
         price_eid = f"E{idx}P"
         sector_eid = f"E{idx}S"
@@ -212,7 +248,11 @@ def main() -> int:
             continue
         if selected_count >= args.limit:
             continue
+        sector_name = row.get("sector") or "unknown"
+        if selected_sector_counts.get(sector_name, 0) >= args.max_per_sector:
+            continue
         recommendations.append(item)
+        selected_sector_counts[sector_name] = selected_sector_counts.get(sector_name, 0) + 1
         selected_count += 1
 
     payload = {
@@ -220,6 +260,11 @@ def main() -> int:
         "run_time": datetime.now().astimezone().isoformat(),
         "recommendations": recommendations,
         "sector_anchors": sector_anchors,
+        "candidate_pool_audit": build_pool_audit(rows, sectors),
+        "selection_policy": {
+            "max_per_sector": args.max_per_sector,
+            "reason": "limit availability bias from a manually or partially collected stock pool",
+        },
         "evidence": evidence,
     }
     output = Path(args.output)
