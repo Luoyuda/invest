@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Search market news with timeout budgets and provider fallback.
+"""Search A-share focused market news with timeout budgets and fallback.
 
 The script records provider failures instead of blocking downstream workflows.
-It uses free RSS feeds by default, and supports Brave/Tavily when API keys are
-configured.
+It uses A-share focused site-scoped RSS discovery by default, and supports
+Brave/Tavily when API keys are configured.
 """
 
 from __future__ import annotations
@@ -19,6 +19,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
+
+
+A_SHARE_SITE_SCOPES = {
+    "cls": "site:cls.cn",
+    "stcn": "site:stcn.com",
+    "eastmoney": "site:finance.eastmoney.com",
+    "sina_finance": "site:finance.sina.com.cn",
+}
 
 
 def now_iso() -> str:
@@ -54,12 +62,7 @@ def get_text(url: str, params: dict[str, str], timeout: float) -> str:
         return response.read().decode("utf-8", "ignore")
 
 
-def search_google_news_rss(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
-    text = get_text(
-        "https://news.google.com/rss/search",
-        {"q": query, "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"},
-        timeout,
-    )
+def parse_rss(text: str, provider: str, max_results: int) -> list[dict[str, Any]]:
     root = ElementTree.fromstring(text)
     results = []
     for item in root.findall(".//item")[:max_results]:
@@ -69,9 +72,43 @@ def search_google_news_rss(query: str, timeout: float, max_results: int) -> list
                 "url": item.findtext("link"),
                 "snippet": item.findtext("description"),
                 "published_at": item.findtext("pubDate"),
-                "provider": "google_news_rss",
+                "provider": provider,
             }
         )
+    return results
+
+
+def search_google_news_rss(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
+    text = get_text(
+        "https://news.google.com/rss/search",
+        {"q": query, "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"},
+        timeout,
+    )
+    return parse_rss(text, "google_news_rss", max_results)
+
+
+def search_a_share_rss(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
+    per_site_limit = max(1, max_results)
+    results = []
+    seen_urls: set[str] = set()
+    per_site_timeout = max(0.5, timeout / max(len(A_SHARE_SITE_SCOPES), 1))
+    for site_name, site_scope in A_SHARE_SITE_SCOPES.items():
+        scoped_query = f"{query} A股 {site_scope}"
+        text = get_text(
+            "https://news.google.com/rss/search",
+            {"q": scoped_query, "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"},
+            per_site_timeout,
+        )
+        for item in parse_rss(text, "a_share_rss", per_site_limit):
+            url = item.get("url")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            item["source_scope"] = site_name
+            item["query_scope"] = site_scope
+            results.append(item)
+            if len(results) >= max_results:
+                return results
     return results
 
 
@@ -127,6 +164,7 @@ def search_brave(query: str, timeout: float, max_results: int) -> list[dict[str,
 
 
 PROVIDERS = {
+    "a_share_rss": search_a_share_rss,
     "google_news_rss": search_google_news_rss,
     "brave": search_brave,
     "tavily": search_tavily,
@@ -144,7 +182,7 @@ def parse_providers(value: str) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search news with provider fallback")
     parser.add_argument("query", help="Search query")
-    parser.add_argument("--providers", default="google_news_rss,brave,tavily")
+    parser.add_argument("--providers", default="a_share_rss,brave,tavily")
     parser.add_argument("--timeout", type=float, default=8.0, help="Per-provider timeout seconds")
     parser.add_argument("--overall-timeout", type=float, default=20.0, help="Overall search budget seconds")
     parser.add_argument("--max-results", type=int, default=5)

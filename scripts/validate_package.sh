@@ -66,6 +66,7 @@ grep -q 'runtime/search-results.latest.json' runtime/README.md || fail "runtime 
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
 grep -q 'fetch_sector_boards.py' runtime/README.md || fail "runtime README must list sector board fetcher"
 grep -q 'search_news.py' runtime/README.md || fail "runtime README must list search news script"
+grep -q 'A 股定向新闻检索' runtime/README.md || fail "runtime README must define A-share focused search"
 grep -q 'build_sector_metrics.py' runtime/README.md || fail "runtime README must list sector metrics builder"
 grep -q 'generate_candidates.py' runtime/README.md || fail "runtime README must list candidate generator"
 grep -q 'replay_recommendations.py' runtime/README.md || fail "runtime README must list replay script"

@@ -122,7 +122,7 @@ runtime/weekly-review.latest.json
 ```text
 scripts/fetch_a_share_data.py          # 多源获取 A 股行情，写入 market-data
 scripts/fetch_sector_boards.py         # 获取东方财富/可选同花顺板块快照
-scripts/search_news.py                 # 多搜索 provider 新闻检索，默认 RSS 免费源，支持超时预算和降级
+scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS 免费源，支持超时预算和降级
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
 scripts/collect_catalysts.py           # 从公告/政策/产业 CSV 收集催化记录

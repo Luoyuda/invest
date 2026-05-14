@@ -52,7 +52,7 @@
 
 - `scripts/fetch_a_share_data.py`：多源获取行情，默认东方财富主源、腾讯交叉校验。
 - `scripts/fetch_sector_boards.py`：获取东方财富板块快照，或在安装 AKShare 时获取同花顺板块快照。
-- `scripts/search_news.py`：多搜索 provider 新闻检索，默认 RSS 免费源，Brave/Tavily 为可选 API key 源。
+- `scripts/search_news.py`：A 股定向新闻检索，默认站点定向 RSS 免费源，Brave/Tavily 为可选 API key 源。
 - `scripts/build_sector_metrics.py`：从 CSV/导出数据构建板块指标输入。
 - `scripts/generate_sector_state.py`：生成运行态板块状态。
 - `scripts/collect_catalysts.py`：收集公告、政策、产业催化记录。
