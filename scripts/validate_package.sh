@@ -44,6 +44,8 @@ grep -q '## 1.0 稳定性分层' references/a-share-data-sources.md || fail "dat
 grep -q 'S1 原始/官方来源' references/a-share-data-sources.md || fail "data sources must prioritize official sources"
 grep -q '09:00 定时任务价格' references/a-share-data-sources.md || fail "data sources must define 09:00 price source priority"
 grep -q '本仓库 Provider Registry' references/a-share-data-sources.md || fail "data sources must define provider registry"
+grep -q 'sina' references/a-share-data-sources.md || fail "data sources must document Sina quote provider"
+grep -q 'adata' references/a-share-data-sources.md || fail "data sources must document optional adata provider"
 grep -q 'akshare_ths' references/a-share-data-sources.md || fail "data sources must document optional Tonghuashun provider"
 grep -q '## 1.0.1 数据整理不偏离原文' references/a-share-data-sources.md || fail "data sources must define non-deviation rules"
 grep -q 'raw_value' references/evidence-schema.md || fail "evidence schema must preserve raw_value"

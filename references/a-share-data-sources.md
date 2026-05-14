@@ -23,8 +23,12 @@
 
 | Provider | 当前用途 | 稳定性分层 | 接入方式 | 使用规则 |
 |---|---|---|---|---|
-| `eastmoney` | 个股行情、行业/概念板块快照 | S3 | 直接调用东方财富公开网页接口 | 默认主源；必须保留字段、数据时间、访问时间和限制说明 |
-| `tencent` | 个股行情交叉校验和兜底 | S4 | 直接调用腾讯公开网页行情接口 | 不单独支撑高确定性推荐；用于与东方财富核对价格 |
+| `sina` | 个股行情快速获取和交叉校验 | S4 | 直接调用新浪财经公开网页行情接口 | 默认 cron 快速源之一；速度快但不作为唯一关键来源 |
+| `tencent` | 个股行情交叉校验和兜底 | S4 | 直接调用腾讯公开网页行情接口 | 默认 cron 快速源之一；用于与新浪核对价格 |
+| `eastmoney` | 个股行情、行业/概念板块快照 | S3 | 直接调用东方财富公开网页接口 | 字段较完整；作为显式增强源使用，避免慢接口拖死 cron |
+| `adata` | 个股行情可选 SDK provider | S2 | 可选安装 adata 后调用其多数据源封装 | Apache-2.0 开源 SDK；底层仍可能依赖公开接口，必须保留 `provider_results` |
+| `adata_east` | 东方财富概念板块快照 | S2 | 可选安装 adata 后调用东方财富概念封装接口 | 用于板块热度补充；返回空结果时自动降级 |
+| `adata_ths` | 同花顺概念板块快照 | S2 | 可选安装 adata 后调用同花顺概念封装接口 | 用于板块热度补充；不等同同花顺官方稳定 API |
 | `akshare_ths` | 同花顺行业/概念板块快照 | S3 | 可选安装 AKShare 后调用同花顺相关封装接口 | 不视为同花顺官方稳定 API；用于板块热度补充和交叉观察 |
 | `a_share_rss` | A 股财经新闻发现 | S3 | 无需 API key；对财联社、证券时报、东方财富、新浪财经等做站点定向 RSS 查询 | 默认免费搜索源；只作为新闻发现入口，核心事实仍需回到原文核验 |
 | `a_share_homepages` | A 股财经首页兜底 | S3 | 无需 API key；抓取财联社、证券时报、东方财富、新浪财经首页 | 当 RSS 返回空结果时兜底，结果是入口线索，不是已核验事实 |
@@ -34,21 +38,27 @@
 
 东方财富和同花顺的判断：
 
+- [mpquant/Ashare](https://github.com/mpquant/Ashare) 的可借鉴点是“新浪 + 腾讯”的轻量行情双源兜底设计；本仓库只吸收 provider 设计，不直接复制代码。
+- [1nchaos/adata](https://github.com/1nchaos/adata) 是 Apache-2.0 开源 SDK，覆盖行情、代码表、交易日历、概念板块、热榜和资金流等能力，适合作为可选结构化 provider。
 - 东方财富公开网页接口覆盖行情、行业板块和概念板块，字段较完整，适合作为免费 S3 主源，但接口参数和字段没有官方长期稳定承诺。
 - 同花顺公开侧没有适合本仓库直接硬编码的免费官方稳定 API；需要同花顺数据时优先通过 AKShare 这类维护中的封装层，或使用付费/终端/正式授权数据。
-- 对关键推荐结论，不得只依赖 `eastmoney` 或 `akshare_ths` 单一板块快照；至少结合运行态板块账本、行情交叉校验、催化来源和风险降级。
+- 对关键推荐结论，不得只依赖 `eastmoney`、`adata_east`、`adata_ths` 或 `akshare_ths` 单一板块快照；至少结合运行态板块账本、行情交叉校验、催化来源和风险降级。
 
 脚本入口：
 
 ```bash
-python3 scripts/fetch_a_share_data.py 000001 600519 --providers eastmoney,tencent
+python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent
+python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent,eastmoney
+python3 scripts/fetch_a_share_data.py 000001 600519 --providers adata,sina,tencent
 python3 scripts/fetch_sector_boards.py --provider eastmoney --kind concept
+python3 scripts/fetch_sector_boards.py --provider adata_east --kind concept
+python3 scripts/fetch_sector_boards.py --provider adata_ths --kind concept
 python3 scripts/fetch_sector_boards.py --provider akshare_ths --kind industry
 python3 scripts/search_news.py "半导体 政策 催化"
 python3 scripts/search_news.py "半导体 政策 催化" --providers a_share_rss,brave,tavily
 ```
 
-`akshare_ths` 是可选能力；没有安装 AKShare 时脚本必须记录错误并降级，不能编造同花顺数据。
+`adata`、`adata_east`、`adata_ths`、`akshare_ths` 都是可选能力；没有安装对应 SDK 时脚本必须记录错误并降级，不能编造数据。
 Brave/Tavily 是可选 API key provider，不应作为默认唯一搜索能力；没有配置 key 或超时时，脚本必须记录 `provider_results` 并继续使用可用 provider。所有搜索结果只是发现入口，最终事实必须打开原文或官方来源核验。
 
 ## 1.0 稳定性分层

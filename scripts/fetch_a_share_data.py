@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Fetch A-share quote data from multiple providers for runtime artifacts.
 
-The default path intentionally keeps dependencies to Python stdlib. Eastmoney is
-used as the primary public S3 quote provider and Tencent as an S4 fallback /
-cross-check provider. Optional providers can be added without changing the
-downstream recommendation schema.
+The default path intentionally keeps dependencies to Python stdlib. Sina and
+Tencent are fast public quote providers used for cron-friendly cross-checks.
+Eastmoney stays available as a richer S3 source, and optional SDK providers can
+be enabled without changing the downstream recommendation schema.
 """
 
 from __future__ import annotations
@@ -191,7 +191,133 @@ def fetch_quote_tencent(code: str) -> dict[str, Any]:
     }
 
 
+def sina_symbol(code: str) -> str:
+    if code.startswith(("6", "9")):
+        return f"sh{code}"
+    return f"sz{code}"
+
+
+def to_float(value: Any) -> float | None:
+    if value in (None, "-", ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_quote_sina(code: str) -> dict[str, Any]:
+    symbol = sina_symbol(code)
+    url = f"https://hq.sinajs.cn/list={symbol}"
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 lobster-invest/1.0",
+            "Referer": "https://finance.sina.com.cn/",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=6) as response:
+        text = response.read().decode("gbk", "ignore")
+    if '="' not in text:
+        raise RuntimeError(f"unexpected sina quote response for {code}")
+    body = text.split('="', 1)[1].rsplit('"', 1)[0]
+    parts = body.split(",")
+    if len(parts) < 32 or not parts[0]:
+        raise RuntimeError(f"incomplete sina quote response for {code}")
+
+    date = parts[30] if len(parts) > 30 else ""
+    quote_time = parts[31] if len(parts) > 31 else ""
+    data_time = f"{date}T{quote_time}" if date and quote_time else None
+    if data_time:
+        try:
+            data_time = datetime.strptime(f"{date} {quote_time}", "%Y-%m-%d %H:%M:%S").astimezone().isoformat()
+        except ValueError:
+            data_time = f"{date} {quote_time}".strip()
+
+    latest = to_float(parts[3])
+    previous_close = to_float(parts[2])
+    change = round(latest - previous_close, 4) if latest is not None and previous_close not in (None, 0) else None
+    pct_change = round(change / previous_close * 100, 4) if change is not None and previous_close not in (None, 0) else None
+    return {
+        "code": code,
+        "name": parts[0],
+        "exchange": "SSE" if code.startswith("6") else "SZSE",
+        "latest_price": latest,
+        "previous_close": previous_close,
+        "open": to_float(parts[1]),
+        "high": to_float(parts[4]),
+        "low": to_float(parts[5]),
+        "volume": parts[8] if len(parts) > 8 else None,
+        "turnover": parts[9] if len(parts) > 9 else None,
+        "change": change,
+        "pct_change": pct_change,
+        "data_time": data_time,
+        "source": {
+            "source_name": "新浪财经",
+            "source_type": "market_data",
+            "stability_tier": "S4",
+            "url": "https://hq.sinajs.cn/list=",
+            "accessed_at": datetime.now().astimezone().isoformat(),
+            "limitations": "公开网页行情接口，速度快但无官方稳定承诺；用于 cron 快速行情和交叉校验。",
+        },
+    }
+
+
+def first_present(row: dict[str, Any], names: list[str]) -> Any:
+    for name in names:
+        if name in row and row[name] not in (None, "", "-"):
+            return row[name]
+    return None
+
+
+def fetch_quote_adata(code: str) -> dict[str, Any]:
+    try:
+        import adata  # type: ignore[import-not-found]
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("adata is not installed; run `python3 -m pip install -U adata` to enable this provider") from exc
+
+    frame = adata.stock.market.list_market_current(code_list=[code])
+    if frame is None or getattr(frame, "empty", True):
+        raise RuntimeError(f"adata returned empty quote response for {code}")
+    row = frame.head(1).to_dict(orient="records")[0]
+    latest = to_float(first_present(row, ["price", "close", "最新价", "现价", "收盘价"]))
+    previous_close = to_float(first_present(row, ["pre_close", "prev_close", "昨收", "昨收价", "previous_close"]))
+    change = to_float(first_present(row, ["change", "涨跌额", "涨跌"]))
+    pct_change = to_float(first_present(row, ["change_pct", "涨跌幅", "pct_change", "increase"]))
+    if change is None and latest is not None and previous_close not in (None, 0):
+        change = round(latest - previous_close, 4)
+    if pct_change is None and change is not None and previous_close not in (None, 0):
+        pct_change = round(change / previous_close * 100, 4)
+
+    return {
+        "code": str(first_present(row, ["stock_code", "code", "股票代码"]) or code),
+        "name": first_present(row, ["short_name", "name", "股票简称", "名称"]),
+        "exchange": "SSE" if code.startswith("6") else "SZSE",
+        "latest_price": latest,
+        "previous_close": previous_close,
+        "open": to_float(first_present(row, ["open", "今开", "开盘价"])),
+        "high": to_float(first_present(row, ["high", "最高", "最高价"])),
+        "low": to_float(first_present(row, ["low", "最低", "最低价"])),
+        "volume": first_present(row, ["volume", "成交量"]),
+        "turnover": first_present(row, ["amount", "turnover", "成交额"]),
+        "change": change,
+        "pct_change": pct_change,
+        "data_time": first_present(row, ["trade_time", "datetime", "time", "更新时间", "交易时间"]),
+        "source": {
+            "source_name": "adata",
+            "source_type": "market_data",
+            "stability_tier": "S2",
+            "url": "https://github.com/1nchaos/adata",
+            "accessed_at": datetime.now().astimezone().isoformat(),
+            "limitations": "Apache-2.0 开源 SDK，多数据源封装；底层仍可能依赖公开网页接口，需保留 provider_results 交叉校验。",
+        },
+        "raw_fields": row,
+    }
+
+
 QUOTE_PROVIDERS: dict[str, QuoteProvider] = {
+    "sina": fetch_quote_sina,
+    "adata": fetch_quote_adata,
     "eastmoney": fetch_quote_eastmoney,
     "tencent": fetch_quote_tencent,
 }
@@ -285,7 +411,7 @@ def main() -> int:
     parser.add_argument("--output", "-o", default="runtime/market-data/latest-quotes.json")
     parser.add_argument(
         "--providers",
-        default="eastmoney,tencent",
+        default="sina,tencent",
         help=f"Comma-separated quote providers. Available: {', '.join(QUOTE_PROVIDERS)}",
     )
     parser.add_argument("--max-price-diff-pct", type=float, default=0.5)
@@ -306,7 +432,7 @@ def main() -> int:
 
     payload = {
         "generated_at": datetime.now().astimezone().isoformat(),
-        "source_policy": "Provider registry: Eastmoney S3 primary, Tencent S4 fallback/cross-check by default.",
+        "source_policy": "Provider registry: Sina/Tencent fast cron quotes by default; use Eastmoney S3 or optional adata SDK explicitly for enrichment.",
         "providers": providers,
         "max_price_diff_pct": args.max_price_diff_pct,
         "quotes": quotes,
