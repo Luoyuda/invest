@@ -26,6 +26,7 @@ for script in \
   scripts/validate_answer_format.py \
   scripts/search_news.py \
   scripts/build_sector_metrics.py \
+  scripts/refresh_sector_state.py \
   scripts/generate_sector_state.py \
   scripts/collect_catalysts.py \
   scripts/generate_candidates.py \
@@ -70,6 +71,7 @@ grep -q 'runtime/market-data/sector-boards.latest.json' runtime/README.md || fai
 grep -q 'runtime/search-results.latest.json' runtime/README.md || fail "runtime README must define search results artifact"
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
 grep -q 'fetch_sector_boards.py' runtime/README.md || fail "runtime README must list sector board fetcher"
+grep -q 'refresh_sector_state.py' runtime/README.md || fail "runtime README must list bounded sector refresh"
 grep -q 'search_news.py' runtime/README.md || fail "runtime README must list search news script"
 grep -q 'A 股定向新闻检索' runtime/README.md || fail "runtime README must define A-share focused search"
 grep -q 'build_sector_metrics.py' runtime/README.md || fail "runtime README must list sector metrics builder"
@@ -121,6 +123,8 @@ grep -q 'fixtures/' scripts/install_lobster_assistant.sh || fail "install script
 grep -q 'CHANGELOG.md' scripts/install_lobster_assistant.sh || fail "install script must copy changelog"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
 grep -q 'max_tables' scripts/validate_answer_format.py || fail "validate_answer_format.py must enforce table limit"
+grep -q 'fetch-timeout-sec' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must expose fetch timeout"
+grep -q 'cached_board_snapshot' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must support cache fallback"
 grep -q '最多 5 个 Markdown 表格' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must define IM table limit"
 grep -q '最多 5 个 Markdown 表格' references/evidence-schema.md || fail "evidence schema must define IM table limit"
 

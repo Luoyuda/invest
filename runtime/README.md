@@ -125,6 +125,7 @@ scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/
 scripts/check_connectivity.py          # 一键检查包结构、行情、概念/行业板块、新闻搜索连通性
 scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
+scripts/refresh_sector_state.py        # 有锁、有超时、有缓存兜底地刷新板块状态
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
 scripts/collect_catalysts.py           # 从公告/政策/产业 CSV 收集催化记录
 scripts/generate_candidates.py         # 从股票池和板块状态生成候选输入
@@ -158,3 +159,21 @@ python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 
 ```
 
 发送 IM 前应执行该检查。超过 5 个 Markdown/HTML 表格时命令返回非 0，必须改写为列表或合并表格后再发送。
+
+板块状态刷新建议使用有边界的刷新器，而不是在 cron 中串行调用多个外部源：
+
+```bash
+python3 scripts/refresh_sector_state.py \
+  --fetch-timeout-sec 45 \
+  --generate-timeout-sec 20 \
+  --health-output runtime/sector-refresh.latest.json \
+  --summary-output runtime/sector-refresh.latest.txt
+```
+
+该脚本内置：
+
+- `runtime/locks/sector-refresh.lock` 运行锁，避免上一次未结束时重复触发。
+- 概念/行业板块分段超时，单个源卡住不会拖到 500s。
+- 成功快照先写临时文件，只有有数据才替换最新缓存。
+- 外部源失败时使用 `runtime/market-data/sector-boards.{kind}.latest.json` 缓存。
+- 刷新结果与消息发送解耦，消息发送失败不应回滚 `sector-state.latest.json`。

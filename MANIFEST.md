@@ -70,6 +70,7 @@ Scripts:
 - `scripts/check_connectivity.py`
 - `scripts/search_news.py`
 - `scripts/build_sector_metrics.py`
+- `scripts/refresh_sector_state.py`
 - `scripts/generate_sector_state.py`
 - `scripts/collect_catalysts.py`
 - `scripts/generate_candidates.py`

@@ -27,6 +27,26 @@ python3 scripts/build_sector_metrics.py \
 python3 scripts/generate_sector_state.py \
   --input "$tmpdir/sector-metrics.latest.json" \
   --output "$tmpdir/sector-state.latest.json"
+python3 scripts/refresh_sector_state.py \
+  --boards-dir "$tmpdir/market-data" \
+  --metrics-output "$tmpdir/refreshed-sector-metrics.latest.json" \
+  --state-output "$tmpdir/refreshed-sector-state.latest.json" \
+  --health-output "$tmpdir/sector-refresh.latest.json" \
+  --summary-output "$tmpdir/sector-refresh.latest.txt" \
+  --lock-file "$tmpdir/sector-refresh.lock" \
+  --fetch-timeout-sec 15 \
+  --generate-timeout-sec 10 \
+  --limit 5 \
+  --metric-limit-per-kind 3
+python3 - "$tmpdir/sector-refresh.latest.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert data["status"] in {"passed", "degraded", "degraded_stale_state"}
+assert data["duration_sec"] < 60
+PY
 
 echo "[4/7] generate recommendation run"
 python3 scripts/collect_catalysts.py \
