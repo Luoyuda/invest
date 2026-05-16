@@ -22,7 +22,9 @@ fail() {
 for script in \
   scripts/fetch_a_share_data.py \
   scripts/fetch_sector_boards.py \
+  scripts/run_task.py \
   scripts/check_connectivity.py \
+  scripts/write_outbox_message.py \
   scripts/validate_answer_format.py \
   scripts/search_news.py \
   scripts/build_sector_metrics.py \
@@ -79,6 +81,8 @@ grep -q 'generate_candidates.py' runtime/README.md || fail "runtime README must 
 grep -q 'replay_recommendations.py' runtime/README.md || fail "runtime README must list replay script"
 grep -q 'generate_recommendation_run.py' runtime/README.md || fail "runtime README must list recommendation generator"
 grep -q 'weekly_review.py' runtime/README.md || fail "runtime README must list weekly review"
+grep -q 'run_task.py' runtime/README.md || fail "runtime README must list cron task runner"
+grep -q 'write_outbox_message.py' runtime/README.md || fail "runtime README must list outbox writer"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
 grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
 grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read sector state ledger"
@@ -125,6 +129,10 @@ grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh
 grep -q 'max_tables' scripts/validate_answer_format.py || fail "validate_answer_format.py must enforce table limit"
 grep -q 'fetch-timeout-sec' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must expose fetch timeout"
 grep -q 'cached_board_snapshot' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must support cache fallback"
+grep -q 'allow-stale-success' scripts/run_task.py || fail "run_task.py must support stale success fallback"
+grep -q 'blocked_invalid_format' scripts/write_outbox_message.py || fail "write_outbox_message.py must block invalid IM payloads"
+grep -q 'scripts/run_task.py' XIAOLONGXIA_INSTALL_PROMPT.md || fail "install prompt must mention run_task.py"
+grep -q 'scripts/write_outbox_message.py' XIAOLONGXIA_INSTALL_PROMPT.md || fail "install prompt must mention write_outbox_message.py"
 grep -q '最多 5 个 Markdown 表格' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must define IM table limit"
 grep -q '最多 5 个 Markdown 表格' references/evidence-schema.md || fail "evidence schema must define IM table limit"
 

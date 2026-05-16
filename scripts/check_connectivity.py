@@ -16,23 +16,37 @@ from typing import Any
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
-def run_command(name: str, command: list[str]) -> dict[str, Any]:
+def run_command(name: str, command: list[str], timeout_sec: int = 30) -> dict[str, Any]:
     started = time.time()
-    process = subprocess.run(  # noqa: S603 - commands are static repo-local checks
-        command,
-        cwd=ROOT_DIR,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    return {
-        "name": name,
-        "command": command,
-        "exit_code": process.returncode,
-        "duration_sec": round(time.time() - started, 3),
-        "stdout": process.stdout,
-        "stderr": process.stderr,
-    }
+    try:
+        process = subprocess.run(  # noqa: S603 - commands are static repo-local checks
+            command,
+            cwd=ROOT_DIR,
+            text=True,
+            capture_output=True,
+            timeout=timeout_sec,
+            check=False,
+        )
+        return {
+            "name": name,
+            "command": command,
+            "exit_code": process.returncode,
+            "duration_sec": round(time.time() - started, 3),
+            "stdout": process.stdout,
+            "stderr": process.stderr,
+            "timeout_sec": timeout_sec,
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "name": name,
+            "command": command,
+            "exit_code": None,
+            "duration_sec": round(time.time() - started, 3),
+            "stdout": exc.stdout or "",
+            "stderr": exc.stderr or "",
+            "timeout_sec": timeout_sec,
+            "error": f"check timed out after {timeout_sec}s",
+        }
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -43,7 +57,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def check_package(tmpdir: Path) -> dict[str, Any]:
-    command = run_command("validate_package", ["bash", "scripts/validate_package.sh"])
+    command = run_command("validate_package", ["bash", "scripts/validate_package.sh"], timeout_sec=30)
     return {
         "status": "passed" if command["exit_code"] == 0 else "failed",
         "command": command,
@@ -55,6 +69,7 @@ def check_quotes(tmpdir: Path) -> dict[str, Any]:
     command = run_command(
         "fetch_a_share_data",
         ["python3", "scripts/fetch_a_share_data.py", "000001", "600519", "--output", str(output)],
+        timeout_sec=20,
     )
     payload = load_json(output)
     quotes = payload.get("quotes") or []
@@ -92,6 +107,7 @@ def check_sector(tmpdir: Path, kind: str) -> dict[str, Any]:
     command = run_command(
         f"fetch_sector_boards_{kind}",
         ["python3", "scripts/fetch_sector_boards.py", "--provider", "auto", "--kind", kind, "--limit", "5", "--output", str(output)],
+        timeout_sec=25,
     )
     payload = load_json(output)
     boards = payload.get("boards") or []
@@ -132,6 +148,7 @@ def check_news(tmpdir: Path) -> dict[str, Any]:
             "--output",
             str(output),
         ],
+        timeout_sec=18,
     )
     payload = load_json(output)
     results = payload.get("results") or []

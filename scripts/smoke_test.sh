@@ -47,6 +47,34 @@ data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert data["status"] in {"passed", "degraded", "degraded_stale_state"}
 assert data["duration_sec"] < 60
 PY
+python3 scripts/run_task.py \
+  --name smoke-sector-refresh \
+  --timeout-sec 60 \
+  --retries 0 \
+  --health-output "$tmpdir/task-runs/smoke-sector-refresh.latest.json" \
+  --summary-output "$tmpdir/task-runs/smoke-sector-refresh.latest.txt" \
+  --success-marker "$tmpdir/task-runs/smoke-sector-refresh.last-success.json" \
+  --lock-file "$tmpdir/task-runs/smoke-sector-refresh.lock" \
+  -- python3 scripts/refresh_sector_state.py \
+    --boards-dir "$tmpdir/task-market-data" \
+    --metrics-output "$tmpdir/task-sector-metrics.latest.json" \
+    --state-output "$tmpdir/task-sector-state.latest.json" \
+    --health-output "$tmpdir/task-sector-refresh.latest.json" \
+    --summary-output "$tmpdir/task-sector-refresh.latest.txt" \
+    --lock-file "$tmpdir/task-sector-refresh.lock" \
+    --fetch-timeout-sec 15 \
+    --generate-timeout-sec 10 \
+    --limit 5 \
+    --metric-limit-per-kind 3
+python3 - "$tmpdir/task-runs/smoke-sector-refresh.latest.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert data["status"] == "passed"
+assert data["attempts"][0]["status"] == "passed"
+PY
 
 echo "[4/7] generate recommendation run"
 python3 scripts/collect_catalysts.py \
@@ -100,6 +128,21 @@ cat > "$tmpdir/answer-valid.md" <<'EOF'
 1. fixture，https://example.com；支撑信息：样例。
 EOF
 python3 scripts/validate_answer_format.py "$tmpdir/answer-valid.md" --max-tables 5 >/tmp/lobster-answer-format.out 2>&1
+python3 scripts/write_outbox_message.py \
+  --input "$tmpdir/answer-valid.md" \
+  --task smoke-test \
+  --outbox-dir "$tmpdir/outbox/pending" \
+  --max-tables 5 >/tmp/lobster-outbox.out 2>&1
+python3 - "$tmpdir/outbox/pending" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+items = sorted(Path(sys.argv[1]).glob("*.json"))
+assert items, "missing outbox metadata"
+data = json.loads(items[-1].read_text(encoding="utf-8"))
+assert data["status"] == "pending"
+PY
 cat > "$tmpdir/answer-invalid.md" <<'EOF'
 | A | B |
 |---|---|
@@ -131,6 +174,7 @@ if python3 scripts/validate_answer_format.py "$tmpdir/answer-invalid.md" --max-t
   exit 1
 fi
 rm -f /tmp/lobster-answer-format.out /tmp/lobster-answer-format-invalid.out
+rm -f /tmp/lobster-outbox.out
 python3 scripts/append_feedback.py \
   --run-id smoke-test \
   --failure-type sector_selection_error \

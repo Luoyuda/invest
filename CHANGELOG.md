@@ -19,7 +19,10 @@
 - `fetch_sector_boards.py --provider auto` 默认尝试 `adata_east`、`eastmoney`、`sohu`、`akshare_ths`；`adata_ths` 保留为显式 provider，避免部分环境的 native 依赖问题拖慢 cron。
 - 新增 `scripts/check_connectivity.py`，一键检查包结构、默认行情、概念/行业板块和新闻搜索连通性，并输出 JSON/TXT 报告。
 - 新增 `scripts/validate_answer_format.py`，发送 IM 前检查最终 Markdown/HTML 表格数量，默认超过 5 个直接失败。
+- 新增 `scripts/run_task.py`，给所有 cron 提供统一的运行锁、单次总超时、重试、健康报告和最近成功兜底，避免单个任务卡到 500s 后影响后续流程。
+- 新增 `scripts/write_outbox_message.py`，将最终消息先写入 outbox 并执行表格数量校验，把内容生成和 IM 投递拆开。
 - 新增 `scripts/refresh_sector_state.py`，板块状态刷新改为有锁、分段超时、缓存兜底、刷新与消息发送解耦的 bounded job，降低高频 cron 超时风险。
+- `scripts/check_connectivity.py` 的每个检查项增加独立超时，避免诊断任务因单个外部源卡住。
 - 行情输出新增：
   - `provider_results`：每个 provider 的成功/失败、错误信息和原始 quote。
   - `quality.status`：`passed | conflict | single_source | failed`。

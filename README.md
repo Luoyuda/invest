@@ -24,12 +24,14 @@ https://github.com/Luoyuda/invest.git
 - A 股持仓复盘 Skill
 - A 股候选观察池跟踪 Skill
 - 共享 reference：数据源策略、证据包 schema、板块状态账本、推荐 run schema、skill 质量评分表
-- 运行态产物规范：`runtime/sector-state.latest.json`、`runtime/recommendation-runs/latest.json`、`runtime/feedback-log.jsonl`
+- 运行态产物规范：`runtime/sector-state.latest.json`、`runtime/recommendation-runs/latest.json`、`runtime/feedback-log.jsonl`、`runtime/task-runs/*.latest.json`
 - 三角色自我迭代体系
 - 安装脚本
 - 推荐 run 硬规则校验脚本
 - 运行态生成脚本：行情获取、板块状态、推荐 run、反馈写入、来源审计、周度复盘
+- cron 通用运行器：运行锁、总超时、重试、健康报告、最近成功兜底
 - 有边界的板块状态刷新器：运行锁、分段超时、缓存兜底、发送解耦
+- outbox 消息落盘脚本：发送前校验格式，IM 投递失败不影响上游任务状态
 - 连通性检查脚本：一键验证包结构、行情、板块和新闻搜索是否可用
 - 最终回答格式校验脚本：限制 Markdown 表格数量，避免触发 IM API 限制
 - 多源 provider registry：新浪/腾讯快速行情交叉校验，东方财富/搜狐板块适配，adata/AKShare 可选适配

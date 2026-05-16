@@ -1,4 +1,11 @@
 # Local runtime logs and generated check artifacts
 log/
 skill-test-results/
-
+runtime/*.latest.json
+runtime/*.latest.txt
+runtime/.connectivity-tmp/
+runtime/locks/
+runtime/market-data/
+runtime/outbox/
+runtime/recommendation-runs/
+runtime/task-runs/

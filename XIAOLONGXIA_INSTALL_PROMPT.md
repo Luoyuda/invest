@@ -17,6 +17,8 @@
    - `self-improvement/`
    - `scripts/install_lobster_assistant.sh`
    - `scripts/validate_package.sh`
+   - `scripts/run_task.py`
+   - `scripts/write_outbox_message.py`
 
 2. 先执行包校验：
 
@@ -63,6 +65,8 @@ cat "$LOBSTER_INSTALL_DIR/docs/CHANGELOG.md"
    - `a-share-watchlist-tracker`
    - `references`
    - `self-improvement`
+   - `scripts/run_task.py`：定时任务运行锁、超时、重试和健康报告
+   - `scripts/write_outbox_message.py`：最终消息落盘与发送前格式校验
 
 ## 安装完成后的回复格式
 

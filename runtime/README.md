@@ -13,6 +13,10 @@ runtime/market-data/sector-boards.latest.json
 runtime/search-results.latest.json
 runtime/source-audit.latest.json
 runtime/weekly-review.latest.json
+runtime/task-runs/*.latest.json
+runtime/task-runs/*.last-success.json
+runtime/outbox/pending/*.md
+runtime/outbox/pending/*.json
 ```
 
 ## 1. sector-state.latest.json
@@ -122,7 +126,9 @@ runtime/weekly-review.latest.json
 ```text
 scripts/fetch_a_share_data.py          # 多源获取 A 股行情，默认新浪+腾讯快路径，可选东方财富/adata
 scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/AKShare 板块快照，空结果默认降级不阻断
+scripts/run_task.py                    # cron 通用运行器：锁、总超时、重试、健康报告、最近成功兜底
 scripts/check_connectivity.py          # 一键检查包结构、行情、概念/行业板块、新闻搜索连通性
+scripts/write_outbox_message.py        # 只写待发送消息产物，不直接调用 IM API；发送前校验表格数量
 scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/refresh_sector_state.py        # 有锁、有超时、有缓存兜底地刷新板块状态
@@ -152,6 +158,32 @@ python3 scripts/check_connectivity.py \
 
 检查项包括包结构、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
 
+cron 任务建议统一套一层运行器，避免任务超时后拖垮后续流程：
+
+```bash
+python3 scripts/run_task.py \
+  --name "sector-refresh-1600" \
+  --timeout-sec 90 \
+  --retries 1 \
+  --allow-stale-success \
+  --stale-success-max-age-hours 24 \
+  -- python3 scripts/refresh_sector_state.py \
+    --fetch-timeout-sec 30 \
+    --generate-timeout-sec 15
+```
+
+运行器会生成：
+
+- `runtime/task-runs/<name>.latest.json`：最近一次运行健康报告。
+- `runtime/task-runs/<name>.latest.txt`：给 IM 或人工看的简版摘要。
+- `runtime/task-runs/<name>.last-success.json`：最近成功记录；外部源临时失败时可作为降级依据。
+
+定时任务推荐的稳定性边界：
+
+- 09:00 推荐快跑：`timeout-sec` 建议 120-180 秒；不做全市场板块重算。
+- 盘中/盘后板块刷新：`timeout-sec` 建议 90-120 秒；外部源失败时保留最近成功状态。
+- 消息发送：作为独立任务处理，发送失败只标记 delivery 失败，不把数据刷新或推荐生成判为失败。
+
 最终回答格式检查：
 
 ```bash
@@ -159,6 +191,18 @@ python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 
 ```
 
 发送 IM 前应执行该检查。超过 5 个 Markdown/HTML 表格时命令返回非 0，必须改写为列表或合并表格后再发送。
+
+若运行环境支持发送前落盘，优先写入 outbox，再由独立发送器投递：
+
+```bash
+python3 scripts/write_outbox_message.py \
+  --task "09:00-a-share-recommendation" \
+  --input runtime/final-answer.md \
+  --outbox-dir runtime/outbox/pending \
+  --max-tables 5
+```
+
+这样可以把“内容生成成功”和“IM API 投递成功”拆开。IM 短暂不可用时，待发送内容仍保留在 `runtime/outbox/pending/`，不会丢失本次分析结果。
 
 板块状态刷新建议使用有边界的刷新器，而不是在 cron 中串行调用多个外部源：
 
