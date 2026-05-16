@@ -131,6 +131,7 @@ scripts/generate_candidates.py         # 从股票池和板块状态生成候选
 scripts/generate_recommendation_run.py # 从结构化候选生成 recommendation-runs/latest.json
 scripts/validate_run.sh                # 硬规则校验 recommendation run
 scripts/audit_run_sources.py           # 检查 evidence 字段和来源链接可访问性
+scripts/validate_answer_format.py      # 检查最终 Markdown 回答表格数量，避免超过 IM API 限制
 scripts/append_feedback.py             # 写入 feedback-log.jsonl
 scripts/replay_recommendations.py      # 用后续价格复盘推荐结果
 scripts/weekly_review.py               # 汇总 run 和 feedback，生成周度复盘
@@ -149,3 +150,11 @@ python3 scripts/check_connectivity.py \
 ```
 
 检查项包括包结构、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
+
+最终回答格式检查：
+
+```bash
+python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5
+```
+
+发送 IM 前应执行该检查。超过 5 个 Markdown/HTML 表格时命令返回非 0，必须改写为列表或合并表格后再发送。

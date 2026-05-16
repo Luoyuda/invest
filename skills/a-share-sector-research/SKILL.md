@@ -15,6 +15,10 @@ description: Use this skill when the user asks to分析A股行业、赛道、板
 - `references/evidence-schema.md`
 - `references/sector-state.md`
 
+## IM 输出限制
+
+最终回答最多 5 个 Markdown 表格。超过 5 个表格时，保留核心汇总表，其余明细改为编号列表；来源链接必须用编号列表。发送前可运行 `python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5`。
+
 ## Step 1: 明确研究范围
 
 默认输出 A 股相关行业研究。识别：

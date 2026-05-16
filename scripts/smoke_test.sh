@@ -69,6 +69,48 @@ rm -f /tmp/lobster-invalid.out
 
 echo "[7/7] audit, feedback, weekly review"
 python3 scripts/audit_run_sources.py "$tmpdir/latest.json" --output "$tmpdir/source-audit.json" --skip-network
+cat > "$tmpdir/answer-valid.md" <<'EOF'
+## 样例回答
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+### 来源链接
+1. fixture，https://example.com；支撑信息：样例。
+EOF
+python3 scripts/validate_answer_format.py "$tmpdir/answer-valid.md" --max-tables 5 >/tmp/lobster-answer-format.out 2>&1
+cat > "$tmpdir/answer-invalid.md" <<'EOF'
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| A | B |
+|---|---|
+| 1 | 2 |
+EOF
+if python3 scripts/validate_answer_format.py "$tmpdir/answer-invalid.md" --max-tables 5 >/tmp/lobster-answer-format-invalid.out 2>&1; then
+  echo "ERROR: answer with too many tables unexpectedly passed" >&2
+  cat /tmp/lobster-answer-format-invalid.out >&2
+  exit 1
+fi
+rm -f /tmp/lobster-answer-format.out /tmp/lobster-answer-format-invalid.out
 python3 scripts/append_feedback.py \
   --run-id smoke-test \
   --failure-type sector_selection_error \

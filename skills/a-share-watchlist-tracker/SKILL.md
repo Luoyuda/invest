@@ -14,6 +14,10 @@ description: Use this skill when the user wants to维护A股候选观察池、�
 - `references/a-share-data-sources.md`
 - `references/evidence-schema.md`
 
+## IM 输出限制
+
+最终回答最多 5 个 Markdown 表格。超过 5 个表格时，保留核心汇总表，其余明细改为编号列表；来源链接必须用编号列表。发送前可运行 `python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5`。
+
 ## Step 1: 读取候选池输入
 
 候选池可以来自：

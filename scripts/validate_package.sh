@@ -23,6 +23,7 @@ for script in \
   scripts/fetch_a_share_data.py \
   scripts/fetch_sector_boards.py \
   scripts/check_connectivity.py \
+  scripts/validate_answer_format.py \
   scripts/search_news.py \
   scripts/build_sector_metrics.py \
   scripts/generate_sector_state.py \
@@ -119,6 +120,9 @@ grep -q '\*.py' scripts/install_lobster_assistant.sh || fail "install script mus
 grep -q 'fixtures/' scripts/install_lobster_assistant.sh || fail "install script must copy fixtures"
 grep -q 'CHANGELOG.md' scripts/install_lobster_assistant.sh || fail "install script must copy changelog"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
+grep -q 'max_tables' scripts/validate_answer_format.py || fail "validate_answer_format.py must enforce table limit"
+grep -q '最多 5 个 Markdown 表格' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must define IM table limit"
+grep -q '最多 5 个 Markdown 表格' references/evidence-schema.md || fail "evidence schema must define IM table limit"
 
 for fixture in \
   fixtures/sector-metrics.sample.json \

@@ -23,6 +23,10 @@ description: Use this skill when the user asks to推荐A股个股、筛选股票
 - `a-share-sector-research`
 - `a-share-watchlist-tracker`
 
+## IM 输出限制
+
+最终回答最多 5 个 Markdown 表格。超过 5 个表格时，保留核心汇总表，其余明细改为编号列表；来源链接必须用编号列表。发送前可运行 `python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5`。
+
 ## Step 0: 外层模板冲突改写
 
 如果用户、定时任务或上游 prompt 要求输出以下字段，不要拒绝整个推荐任务；必须继续给出 3-5 只推荐标的，但把字段改写为有口径、有来源、能区分事实和预测的推荐格式：

@@ -76,6 +76,7 @@ Scripts:
 - `scripts/generate_recommendation_run.py`
 - `scripts/append_feedback.py`
 - `scripts/audit_run_sources.py`
+- `scripts/validate_answer_format.py`
 - `scripts/replay_recommendations.py`
 - `scripts/weekly_review.py`
 - `scripts/install_lobster_assistant.sh`

@@ -14,6 +14,10 @@ description: Use this skill when需要为股票分析、财经要闻、公告解
 - `references/evidence-schema.md`
 - `references/a-share-data-sources.md`
 
+## IM 输出限制
+
+最终回答最多 5 个 Markdown 表格。超过 5 个表格时，保留核心汇总表，其余明细改为编号列表；来源链接必须用编号列表。发送前可运行 `python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5`。
+
 ## Step 1: 抽取关键事实
 
 从待审回答或待写答案中抽取：

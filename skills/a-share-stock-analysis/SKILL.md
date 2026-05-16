@@ -21,6 +21,10 @@ description: Use this skill when the user asks to分析A股个股、股票、上
 - `a-share-earnings-announcement-review`（公告/财报专项）
 - `a-share-sector-research`（行业专项）
 
+## IM 输出限制
+
+最终回答最多 5 个 Markdown 表格。超过 5 个表格时，保留核心汇总表，其余明细改为编号列表；来源链接必须用编号列表。发送前可运行 `python3 scripts/validate_answer_format.py /path/to/final-answer.md --max-tables 5`。
+
 ## Step 1: 任务分流
 
 | 用户问题 | 处理方式 |
