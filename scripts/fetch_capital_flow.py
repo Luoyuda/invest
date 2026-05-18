@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-from html.parser import HTMLParser
 import json
 import re
 import sys
@@ -139,38 +138,6 @@ def amount_to_yi(value: str) -> float | None:
     if number is None:
         return None
     return round(number * multiplier, 4)
-
-
-class TableParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.in_row = False
-        self.in_cell = False
-        self.current_cell: list[str] = []
-        self.current_row: list[str] = []
-        self.rows: list[list[str]] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "tr":
-            self.in_row = True
-            self.current_row = []
-        elif self.in_row and tag in {"td", "th"}:
-            self.in_cell = True
-            self.current_cell = []
-
-    def handle_data(self, data: str) -> None:
-        if self.in_cell:
-            self.current_cell.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in {"td", "th"} and self.in_cell:
-            text = re.sub(r"\s+", " ", "".join(self.current_cell)).strip()
-            self.current_row.append(text)
-            self.in_cell = False
-        elif tag == "tr" and self.in_row:
-            if self.current_row:
-                self.rows.append(self.current_row)
-            self.in_row = False
 
 
 def sum_recent(rows: list[dict[str, Any]], days: int, key: str) -> float | None:
@@ -387,51 +354,76 @@ def parse_market_rows(html: str, limit: int) -> list[dict[str, Any]]:
     return items
 
 
+def parse_js_data(html: str) -> list[dict[str, Any]]:
+    match = re.search(r"var\s+JS_DATA\s*=\s*(\[.*?\]);", html, re.S)
+    if not match:
+        return []
+    data = json.loads(match.group(1))
+    result = []
+    for item in data:
+        amount = to_float(item.get("amount"))
+        result.append(
+            {
+                "name": item.get("name"),
+                "net_inflow_yi": amount,
+                "url": item.get("addr"),
+            }
+        )
+    return result
+
+
+def fetch_ths_direction_page(kind: str, timeout: int) -> dict[str, Any]:
+    path = "hyzjl" if kind == "industry" else "gnzjl"
+    url = f"https://data.10jqka.com.cn/funds/{path}/"
+    html = fetch_text_url(url, timeout=timeout, referer="https://data.10jqka.com.cn/funds/ggzjl/")
+    flows = parse_js_data(html)
+    if not flows:
+        raise RuntimeError(f"empty Tonghuashun {kind} flow JS_DATA")
+    inflow = [item for item in flows if (item.get("net_inflow_yi") or 0) > 0]
+    outflow = [item for item in flows if (item.get("net_inflow_yi") or 0) < 0]
+    return {
+        "kind": kind,
+        "url": url,
+        "items": flows,
+        "top_net_inflow": sorted(inflow, key=lambda item: item.get("net_inflow_yi") or 0, reverse=True)[:10],
+        "top_net_outflow": sorted(outflow, key=lambda item: item.get("net_inflow_yi") or 0)[:10],
+    }
+
+
 def fetch_ths_market_flow(limit: int, timeout: int) -> dict[str, Any]:
-    url = "https://data.10jqka.com.cn/funds/ggzjl/"
-    html = fetch_text_url(url, timeout=timeout, referer="https://data.10jqka.com.cn/")
-    items = parse_market_rows(html, limit)
-    if not items:
-        raise RuntimeError("empty Tonghuashun market capital-flow table")
-    total_pages = None
-    match = re.search(r'<span class="page_info">\s*\d+/(\d+)\s*</span>', html)
-    if match:
-        total_pages = int(match.group(1))
-
-    def sum_key(key: str) -> float:
-        return round(sum(item.get(key) or 0 for item in items), 4)
-
-    sorted_inflow = sorted(items, key=lambda item: item.get("net_inflow_yi") or 0, reverse=True)
-    sorted_outflow = sorted(items, key=lambda item: item.get("net_inflow_yi") or 0)
+    industry = fetch_ths_direction_page("industry", timeout)
+    concept = fetch_ths_direction_page("concept", timeout)
     return {
         "provider": "ths",
         "scope": "market",
         "status": "passed",
         "data_time": datetime.now().astimezone().isoformat(),
-        "sample_size": len(items),
-        "total_pages": total_pages,
-        "sample_aggregate": {
-            "inflow_yi": sum_key("inflow_yi"),
-            "outflow_yi": sum_key("outflow_yi"),
-            "net_inflow_yi": sum_key("net_inflow_yi"),
-            "turnover_yi": sum_key("turnover_yi"),
+        "is_market_total": False,
+        "scope_note": "大盘资金方向使用同花顺行业资金与概念资金 JS_DATA 观察资金流向，不提供全市场精确总流入/总流出。",
+        "industry_flow": {
+            "top_net_inflow": industry["top_net_inflow"][:limit],
+            "top_net_outflow": industry["top_net_outflow"][:limit],
+            "source_url": industry["url"],
         },
-        "top_net_inflow": sorted_inflow[:5],
-        "top_net_outflow": sorted_outflow[:5],
-        "items": items,
+        "concept_flow": {
+            "top_net_inflow": concept["top_net_inflow"][:limit],
+            "top_net_outflow": concept["top_net_outflow"][:limit],
+            "source_url": concept["url"],
+        },
         "summary": {
-            "sample_net_inflow_yi": sum_key("net_inflow_yi"),
-            "top_inflow_stock": sorted_inflow[0],
-            "top_outflow_stock": sorted_outflow[0],
-            "interpretation_boundary": "该数据来自同花顺沪深两市个股资金流向排行页。当前脚本默认解析可公开访问的首页榜单样本，不把样本合计冒充全市场总额；如需全市场精确总额，需要稳定分页访问或授权数据源。",
+            "strong_industries": industry["top_net_inflow"][:5],
+            "weak_industries": industry["top_net_outflow"][:5],
+            "strong_concepts": concept["top_net_inflow"][:5],
+            "weak_concepts": concept["top_net_outflow"][:5],
+            "interpretation_boundary": "这是行业/概念资金方向，不是全市场资金净流入总额；不得写成大盘总流入、总流出或全市场净额。",
         },
         "source": {
-            "source_name": "同花顺沪深两市个股资金流向排行",
+            "source_name": "同花顺行业/概念资金流向",
             "source_type": "market_capital_flow",
             "stability_tier": "S4",
-            "url": url,
+            "url": "https://data.10jqka.com.cn/funds/hyzjl/ ; https://data.10jqka.com.cn/funds/gnzjl/",
             "accessed_at": datetime.now().astimezone().isoformat(),
-            "limitations": "公开网页榜单页，分页接口可能需要校验；默认只作为大盘资金方向样本和榜单观察，不作为全市场精确总额。",
+            "limitations": "公开网页 JS_DATA，适合观察行业/概念资金方向；不提供全市场精确资金总额，不能替代授权行情终端的大盘资金统计。",
         },
     }
 

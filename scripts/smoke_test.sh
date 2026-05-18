@@ -108,9 +108,11 @@ from pathlib import Path
 data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 result = data["results"][0]
 assert data["scope"] == "market"
-assert result["sample_size"] > 0
-assert result["top_net_inflow"]
-assert result["top_net_outflow"]
+assert result["is_market_total"] is False
+assert result["industry_flow"]["top_net_inflow"]
+assert result["industry_flow"]["top_net_outflow"]
+assert result["concept_flow"]["top_net_inflow"]
+assert "不是全市场资金净流入总额" in result["summary"]["interpretation_boundary"]
 PY
 python3 scripts/collect_catalysts.py \
   --csv fixtures/catalysts.sample.csv \
