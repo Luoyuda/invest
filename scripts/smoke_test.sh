@@ -94,6 +94,24 @@ result = data["results"][0]
 assert result.get("summary", {}).get("recent_5d_main_net_inflow_yi") is not None or result.get("realtime")
 assert "provider_results" in result
 PY
+python3 scripts/fetch_capital_flow.py \
+  --scope market \
+  --provider ths \
+  --limit 10 \
+  --output "$tmpdir/market-capital-flow.latest.json" \
+  --require-results
+python3 - "$tmpdir/market-capital-flow.latest.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+result = data["results"][0]
+assert data["scope"] == "market"
+assert result["sample_size"] > 0
+assert result["top_net_inflow"]
+assert result["top_net_outflow"]
+PY
 python3 scripts/collect_catalysts.py \
   --csv fixtures/catalysts.sample.csv \
   --output "$tmpdir/catalysts.latest.json"

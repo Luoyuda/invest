@@ -168,6 +168,18 @@ python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20 --output 
 
 默认 `auto` 会先取东方财富 20 日主力净流入趋势，再尝试同花顺实时总流入/总流出和大/中/小单拆分。同花顺失败时应降级保留东方财富趋势，不阻断定时任务。
 
+大盘资金榜样本：
+
+```bash
+python3 scripts/fetch_capital_flow.py \
+  --scope market \
+  --provider ths \
+  --limit 50 \
+  --output runtime/capital-flow.latest.json
+```
+
+该模式读取同花顺沪深两市个股资金流向排行公开页，输出样本合计、净流入前列和净流出前列。默认不得把样本合计写成全市场精确总额。
+
 cron 任务建议统一套一层运行器，避免任务超时后拖垮后续流程：
 
 ```bash

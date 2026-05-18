@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+from html.parser import HTMLParser
 import json
+import re
 import sys
 import time
 import urllib.parse
@@ -71,6 +73,33 @@ def fetch_json_url(url: str, timeout: int = 8, retries: int = 1, referer: str = 
     raise last_exc
 
 
+def fetch_text_url(url: str, timeout: int = 8, retries: int = 1, referer: str = "https://data.10jqka.com.cn/") -> str:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) lobster-invest/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Referer": referer,
+            "Connection": "close",
+        },
+    )
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw = response.read()
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                encoding = "gbk" if "gbk" in content_type or "gb2312" in content_type else "utf-8"
+                return raw.decode(encoding, "ignore")
+        except Exception as exc:  # noqa: BLE001 - diagnostics should keep provider failure
+            last_exc = exc
+            if attempt < retries:
+                time.sleep(0.3 * (attempt + 1))
+    assert last_exc is not None
+    raise last_exc
+
+
 def to_float(value: Any) -> float | None:
     if value in (None, "-", ""):
         return None
@@ -90,6 +119,58 @@ def wan_to_yi(value: float | None) -> float | None:
     if value is None:
         return None
     return round(value / 10_000, 4)
+
+
+def amount_to_yi(value: str) -> float | None:
+    text = re.sub(r"\s+", "", value.strip())
+    if not text or text == "--":
+        return None
+    multiplier = 1.0
+    if text.endswith("亿"):
+        multiplier = 1.0
+        text = text[:-1]
+    elif text.endswith("万"):
+        multiplier = 1 / 10_000
+        text = text[:-1]
+    elif text.endswith("元"):
+        multiplier = 1 / 100_000_000
+        text = text[:-1]
+    number = to_float(text)
+    if number is None:
+        return None
+    return round(number * multiplier, 4)
+
+
+class TableParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.in_row = False
+        self.in_cell = False
+        self.current_cell: list[str] = []
+        self.current_row: list[str] = []
+        self.rows: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "tr":
+            self.in_row = True
+            self.current_row = []
+        elif self.in_row and tag in {"td", "th"}:
+            self.in_cell = True
+            self.current_cell = []
+
+    def handle_data(self, data: str) -> None:
+        if self.in_cell:
+            self.current_cell.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"td", "th"} and self.in_cell:
+            text = re.sub(r"\s+", " ", "".join(self.current_cell)).strip()
+            self.current_row.append(text)
+            self.in_cell = False
+        elif tag == "tr" and self.in_row:
+            if self.current_row:
+                self.rows.append(self.current_row)
+            self.in_row = False
 
 
 def sum_recent(rows: list[dict[str, Any]], days: int, key: str) -> float | None:
@@ -273,6 +354,88 @@ def fetch_ths_realtime_flow(code: str, timeout: int) -> dict[str, Any]:
     }
 
 
+def parse_market_rows(html: str, limit: int) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    tbody_match = re.search(r"<tbody>(.*?)</tbody>", html, re.S | re.I)
+    if not tbody_match:
+        return items
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", tbody_match.group(1), re.S | re.I)
+    for row_html in rows:
+        row = []
+        for cell in re.findall(r"<td[^>]*>(.*?)</td>", row_html, re.S | re.I):
+            text = re.sub(r"<!--.*?-->", "", cell, flags=re.S)
+            text = re.sub(r"<[^>]+>", "", text)
+            row.append(re.sub(r"\s+", " ", text).strip())
+        if len(row) < 10 or not row[0].isdigit():
+            continue
+        items.append(
+            {
+                "rank": int(row[0]),
+                "code": row[1],
+                "name": row[2],
+                "latest_price": to_float(row[3]),
+                "pct_change": to_float(row[4].rstrip("%")) if row[4] else None,
+                "turnover_rate": row[5],
+                "inflow_yi": amount_to_yi(row[6]),
+                "outflow_yi": amount_to_yi(row[7]),
+                "net_inflow_yi": amount_to_yi(row[8]),
+                "turnover_yi": amount_to_yi(row[9]),
+            }
+        )
+        if len(items) >= limit:
+            break
+    return items
+
+
+def fetch_ths_market_flow(limit: int, timeout: int) -> dict[str, Any]:
+    url = "https://data.10jqka.com.cn/funds/ggzjl/"
+    html = fetch_text_url(url, timeout=timeout, referer="https://data.10jqka.com.cn/")
+    items = parse_market_rows(html, limit)
+    if not items:
+        raise RuntimeError("empty Tonghuashun market capital-flow table")
+    total_pages = None
+    match = re.search(r'<span class="page_info">\s*\d+/(\d+)\s*</span>', html)
+    if match:
+        total_pages = int(match.group(1))
+
+    def sum_key(key: str) -> float:
+        return round(sum(item.get(key) or 0 for item in items), 4)
+
+    sorted_inflow = sorted(items, key=lambda item: item.get("net_inflow_yi") or 0, reverse=True)
+    sorted_outflow = sorted(items, key=lambda item: item.get("net_inflow_yi") or 0)
+    return {
+        "provider": "ths",
+        "scope": "market",
+        "status": "passed",
+        "data_time": datetime.now().astimezone().isoformat(),
+        "sample_size": len(items),
+        "total_pages": total_pages,
+        "sample_aggregate": {
+            "inflow_yi": sum_key("inflow_yi"),
+            "outflow_yi": sum_key("outflow_yi"),
+            "net_inflow_yi": sum_key("net_inflow_yi"),
+            "turnover_yi": sum_key("turnover_yi"),
+        },
+        "top_net_inflow": sorted_inflow[:5],
+        "top_net_outflow": sorted_outflow[:5],
+        "items": items,
+        "summary": {
+            "sample_net_inflow_yi": sum_key("net_inflow_yi"),
+            "top_inflow_stock": sorted_inflow[0],
+            "top_outflow_stock": sorted_outflow[0],
+            "interpretation_boundary": "该数据来自同花顺沪深两市个股资金流向排行页。当前脚本默认解析可公开访问的首页榜单样本，不把样本合计冒充全市场总额；如需全市场精确总额，需要稳定分页访问或授权数据源。",
+        },
+        "source": {
+            "source_name": "同花顺沪深两市个股资金流向排行",
+            "source_type": "market_capital_flow",
+            "stability_tier": "S4",
+            "url": url,
+            "accessed_at": datetime.now().astimezone().isoformat(),
+            "limitations": "公开网页榜单页，分页接口可能需要校验；默认只作为大盘资金方向样本和榜单观察，不作为全市场精确总额。",
+        },
+    }
+
+
 def merge_auto_flow(code: str, days: int, timeout: int) -> dict[str, Any]:
     provider_results: list[dict[str, Any]] = []
     try:
@@ -314,9 +477,11 @@ def fetch_provider(provider: str, code: str, days: int, timeout: int) -> dict[st
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch A-share capital-flow data")
-    parser.add_argument("codes", nargs="+", help="A-share stock codes, e.g. 300308 600519")
+    parser.add_argument("codes", nargs="*", help="A-share stock codes, e.g. 300308 600519")
+    parser.add_argument("--scope", choices=["stock", "market"], default="stock")
     parser.add_argument("--provider", choices=["auto", "eastmoney", "ths"], default="auto")
     parser.add_argument("--days", type=int, default=20)
+    parser.add_argument("--limit", type=int, default=50, help="Market ranking rows to parse when --scope market")
     parser.add_argument("--timeout", type=int, default=10)
     parser.add_argument("--output", "-o", default="runtime/capital-flow.latest.json")
     parser.add_argument("--require-results", action="store_true")
@@ -324,15 +489,24 @@ def main() -> int:
 
     results: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
-    for code in args.codes:
+    if args.scope == "market":
         try:
-            results.append(fetch_provider(args.provider, code, args.days, args.timeout))
+            results.append(fetch_ths_market_flow(args.limit, args.timeout))
         except Exception as exc:  # noqa: BLE001 - command-line diagnostics
-            errors.append({"code": code, "provider": args.provider, "error": str(exc)})
+            errors.append({"scope": "market", "provider": "ths", "error": str(exc)})
+    else:
+        if not args.codes:
+            raise SystemExit("stock scope requires at least one code")
+        for code in args.codes:
+            try:
+                results.append(fetch_provider(args.provider, code, args.days, args.timeout))
+            except Exception as exc:  # noqa: BLE001 - command-line diagnostics
+                errors.append({"code": code, "provider": args.provider, "error": str(exc)})
 
     status = "passed" if results and not errors else "degraded" if results else "failed"
     payload = {
         "generated_at": datetime.now().astimezone().isoformat(),
+        "scope": args.scope,
         "provider": args.provider,
         "status": status,
         "results": results,

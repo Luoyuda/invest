@@ -56,11 +56,13 @@
 | `eastmoney` | 个股 3/5/10/20 日主力净流入趋势 | S3 | 默认趋势源；提供净流入和超大/大/中/小单净额 |
 | `ths` | 同花顺个股实时资金流入/流出和大/中/小单拆分 | S4 | 可选增强源；公开网页服务接口，可能受 cookie、Referer、反爬影响 |
 | `auto` | 东方财富趋势 + 同花顺实时字段 | S3/S4 | 默认模式；同花顺失败时保留东方财富趋势并降级 |
+| `ths --scope market` | 同花顺沪深两市个股资金流向排行样本 | S4 | 用于观察大盘资金榜方向；样本合计不得冒充全市场精确总额 |
 
 脚本入口：
 
 ```bash
 python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20
+python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50
 ```
 
 ## 3. 解读规则
