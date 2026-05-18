@@ -21,6 +21,7 @@ fail() {
 [[ -x scripts/smoke_test_installed.sh ]] || fail "missing executable scripts/smoke_test_installed.sh"
 for script in \
   scripts/fetch_a_share_data.py \
+  scripts/fetch_capital_flow.py \
   scripts/fetch_sector_boards.py \
   scripts/run_task.py \
   scripts/check_connectivity.py \
@@ -41,7 +42,7 @@ for script in \
   [[ -x "$script" ]] || fail "$script must be executable"
 done
 
-for ref in references/a-share-data-sources.md references/evidence-schema.md references/sector-state.md references/run-output-schema.md references/skill-quality-rubric.md; do
+for ref in references/a-share-data-sources.md references/capital-flow.md references/evidence-schema.md references/sector-state.md references/run-output-schema.md references/skill-quality-rubric.md; do
   [[ -f "$ref" ]] || fail "missing $ref"
 done
 
@@ -51,6 +52,8 @@ grep -q '09:00 定时任务价格' references/a-share-data-sources.md || fail "d
 grep -q '本仓库 Provider Registry' references/a-share-data-sources.md || fail "data sources must define provider registry"
 grep -q 'sina' references/a-share-data-sources.md || fail "data sources must document Sina quote provider"
 grep -q 'adata' references/a-share-data-sources.md || fail "data sources must document optional adata provider"
+grep -q '同花顺资金流' references/capital-flow.md || fail "capital flow reference must document Tonghuashun provider"
+grep -q '不得反推' references/capital-flow.md || fail "capital flow reference must prohibit unsupported inflow/outflow inference"
 grep -q 'sohu' references/a-share-data-sources.md || fail "data sources must document Sohu board fallback provider"
 grep -q 'akshare_ths' references/a-share-data-sources.md || fail "data sources must document optional Tonghuashun provider"
 grep -q '## 1.0.1 数据整理不偏离原文' references/a-share-data-sources.md || fail "data sources must define non-deviation rules"
@@ -70,7 +73,9 @@ grep -q 'runtime/sector-state.latest.json' runtime/README.md || fail "runtime RE
 grep -q 'runtime/recommendation-runs/latest.json' runtime/README.md || fail "runtime README must define recommendation run artifact"
 grep -q 'runtime/feedback-log.jsonl' runtime/README.md || fail "runtime README must define feedback log artifact"
 grep -q 'runtime/market-data/sector-boards.latest.json' runtime/README.md || fail "runtime README must define sector board artifact"
+grep -q 'runtime/capital-flow.latest.json' runtime/README.md || fail "runtime README must define capital flow artifact"
 grep -q 'runtime/search-results.latest.json' runtime/README.md || fail "runtime README must define search results artifact"
+grep -q 'fetch_capital_flow.py' runtime/README.md || fail "runtime README must list capital flow fetcher"
 grep -q 'generate_sector_state.py' runtime/README.md || fail "runtime README must list sector state generator"
 grep -q 'fetch_sector_boards.py' runtime/README.md || fail "runtime README must list sector board fetcher"
 grep -q 'refresh_sector_state.py' runtime/README.md || fail "runtime README must list bounded sector refresh"
@@ -84,6 +89,9 @@ grep -q 'weekly_review.py' runtime/README.md || fail "runtime README must list w
 grep -q 'run_task.py' runtime/README.md || fail "runtime README must list cron task runner"
 grep -q 'write_outbox_message.py' runtime/README.md || fail "runtime README must list outbox writer"
 grep -q '行业/政策/产业催化 | 35%' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must prioritize policy and industry catalysts"
+grep -q 'references/capital-flow.md' skills/a-share-capital-flow/SKILL.md || fail "capital flow skill must read capital flow reference"
+grep -q 'scripts/fetch_capital_flow.py' skills/a-share-capital-flow/SKILL.md || fail "capital flow skill must document fetch script"
+grep -q '同花顺' skills/a-share-capital-flow/SKILL.md || fail "capital flow skill must mention Tonghuashun realtime source"
 grep -q '先做板块筛选，再做个股筛选' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must use top-down sector filtering"
 grep -q 'references/sector-state.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read sector state ledger"
 grep -q 'references/run-output-schema.md' skills/a-share-stock-recommendation/SKILL.md || fail "stock recommendation must read run output schema"
@@ -127,6 +135,8 @@ grep -q 'fixtures/' scripts/install_lobster_assistant.sh || fail "install script
 grep -q 'CHANGELOG.md' scripts/install_lobster_assistant.sh || fail "install script must copy changelog"
 grep -q 'Run validation passed' scripts/validate_run.sh || fail "validate_run.sh must implement run validation"
 grep -q 'max_tables' scripts/validate_answer_format.py || fail "validate_answer_format.py must enforce table limit"
+grep -q 'spService' scripts/fetch_capital_flow.py || fail "fetch_capital_flow.py must support Tonghuashun realtime flow"
+grep -q 'push2his.eastmoney.com' scripts/fetch_capital_flow.py || fail "fetch_capital_flow.py must support Eastmoney trend flow"
 grep -q 'fetch-timeout-sec' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must expose fetch timeout"
 grep -q 'cached_board_snapshot' scripts/refresh_sector_state.py || fail "refresh_sector_state.py must support cache fallback"
 grep -q 'allow-stale-success' scripts/run_task.py || fail "run_task.py must support stale success fallback"

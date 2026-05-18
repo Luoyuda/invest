@@ -57,6 +57,7 @@ cat "$LOBSTER_INSTALL_DIR/docs/CHANGELOG.md"
    - `a-share-data-provider`
    - `a-share-evidence-pack`
    - `a-share-market-news`
+   - `a-share-capital-flow`
    - `a-share-stock-analysis`
    - `a-share-earnings-announcement-review`
    - `a-share-sector-research`

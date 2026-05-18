@@ -25,7 +25,8 @@
 |---|---|---|---|---|
 | `sina` | 个股行情快速获取和交叉校验 | S4 | 直接调用新浪财经公开网页行情接口 | 默认 cron 快速源之一；速度快但不作为唯一关键来源 |
 | `tencent` | 个股行情交叉校验和兜底 | S4 | 直接调用腾讯公开网页行情接口 | 默认 cron 快速源之一；用于与新浪核对价格 |
-| `eastmoney` | 个股行情、行业/概念板块快照 | S3 | 直接调用东方财富公开网页接口 | 字段较完整；作为显式增强源使用，避免慢接口拖死 cron |
+| `eastmoney` | 个股行情、资金流趋势、行业/概念板块快照 | S3 | 直接调用东方财富公开网页接口 | 字段较完整；作为显式增强源使用，避免慢接口拖死 cron |
+| `ths` | 个股实时资金总流入/总流出、大/中/小单拆分 | S4 | 直接调用同花顺公开网页服务接口 | 仅作可选增强源；可能受 cookie、Referer、反爬和字段变化影响 |
 | `adata` | 个股行情可选 SDK provider | S2 | 可选安装 adata 后调用其多数据源封装 | Apache-2.0 开源 SDK；底层仍可能依赖公开接口，必须保留 `provider_results` |
 | `adata_east` | 东方财富概念板块快照 | S2 | 可选安装 adata 后调用东方财富概念封装接口 | 用于板块热度补充；返回空结果时自动降级 |
 | `adata_ths` | 同花顺概念板块快照 | S2 | 可选安装 adata 后调用同花顺概念封装接口 | 用于板块热度补充；不等同同花顺官方稳定 API |
@@ -42,7 +43,7 @@
 - [mpquant/Ashare](https://github.com/mpquant/Ashare) 的可借鉴点是“新浪 + 腾讯”的轻量行情双源兜底设计；本仓库只吸收 provider 设计，不直接复制代码。
 - [1nchaos/adata](https://github.com/1nchaos/adata) 是 Apache-2.0 开源 SDK，覆盖行情、代码表、交易日历、概念板块、热榜和资金流等能力，适合作为可选结构化 provider。
 - 东方财富公开网页接口覆盖行情、行业板块和概念板块，字段较完整，适合作为免费 S3 主源，但接口参数和字段没有官方长期稳定承诺。
-- 同花顺公开侧没有适合本仓库直接硬编码的免费官方稳定 API；需要同花顺数据时优先通过 AKShare 这类维护中的封装层，或使用付费/终端/正式授权数据。
+- 同花顺公开侧没有适合本仓库作为主链路依赖的免费官方稳定 API；个股资金页的 `spService/{code}/Funds/realFunds/free/1/` 可作为 S4 增强源获取实时流入/流出，但失败时必须降级，不能阻断 cron。
 - 对关键推荐结论，不得只依赖 `eastmoney`、`adata_east`、`adata_ths` 或 `akshare_ths` 单一板块快照；至少结合运行态板块账本、行情交叉校验、催化来源和风险降级。
 
 脚本入口：
@@ -51,6 +52,7 @@
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers sina,tencent,eastmoney
 python3 scripts/fetch_a_share_data.py 000001 600519 --providers adata,sina,tencent
+python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20
 python3 scripts/fetch_sector_boards.py --provider eastmoney --kind concept
 python3 scripts/fetch_sector_boards.py --provider sohu --kind concept
 python3 scripts/fetch_sector_boards.py --provider adata_east --kind concept

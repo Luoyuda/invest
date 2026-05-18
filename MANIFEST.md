@@ -31,6 +31,7 @@ Skills:
 - `skills/a-share-data-provider/SKILL.md`
 - `skills/a-share-evidence-pack/SKILL.md`
 - `skills/a-share-market-news/SKILL.md`
+- `skills/a-share-capital-flow/SKILL.md`
 - `skills/a-share-stock-analysis/SKILL.md`
 - `skills/a-share-earnings-announcement-review/SKILL.md`
 - `skills/a-share-sector-research/SKILL.md`
@@ -41,6 +42,7 @@ Skills:
 References:
 
 - `references/a-share-data-sources.md`
+- `references/capital-flow.md`
 - `references/evidence-schema.md`
 - `references/sector-state.md`
 - `references/run-output-schema.md`
@@ -66,6 +68,7 @@ Self improvement:
 Scripts:
 
 - `scripts/fetch_a_share_data.py`
+- `scripts/fetch_capital_flow.py`
 - `scripts/fetch_sector_boards.py`
 - `scripts/run_task.py`
 - `scripts/check_connectivity.py`

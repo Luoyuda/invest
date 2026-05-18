@@ -102,6 +102,29 @@ def check_quotes(tmpdir: Path) -> dict[str, Any]:
     }
 
 
+def check_capital_flow(tmpdir: Path) -> dict[str, Any]:
+    output = tmpdir / "capital-flow.json"
+    command = run_command(
+        "fetch_capital_flow",
+        ["python3", "scripts/fetch_capital_flow.py", "300308", "--provider", "auto", "--days", "20", "--output", str(output)],
+        timeout_sec=25,
+    )
+    payload = load_json(output)
+    results = payload.get("results") or []
+    passed = command["exit_code"] == 0 and payload.get("status") in {"passed", "degraded"} and len(results) > 0
+    first = results[0] if results else {}
+    return {
+        "status": "passed" if passed else "failed",
+        "provider": payload.get("provider"),
+        "result_count": len(results),
+        "errors": payload.get("errors"),
+        "provider_results": first.get("provider_results"),
+        "summary": first.get("summary"),
+        "realtime": first.get("realtime"),
+        "command": command,
+    }
+
+
 def check_sector(tmpdir: Path, kind: str) -> dict[str, Any]:
     output = tmpdir / f"sector-{kind}.json"
     command = run_command(
@@ -184,6 +207,19 @@ def render_text(report: dict[str, Any]) -> str:
                 lines.append(
                     f"  {quote['code']} {quote['name']} price={quote['latest_price']} time={quote['data_time']} quality={quote['quality']}"
                 )
+        elif name == "capital_flow":
+            lines.append(f"  provider={check.get('provider')} result_count={check.get('result_count')}")
+            summary = check.get("summary") or {}
+            lines.append(
+                f"  today_main_net={summary.get('today_main_net_inflow_yi')}亿 5d={summary.get('recent_5d_main_net_inflow_yi')}亿 20d={summary.get('recent_20d_main_net_inflow_yi')}亿"
+            )
+            realtime = check.get("realtime") or {}
+            if realtime:
+                lines.append(
+                    f"  ths_total_in={realtime.get('total_inflow_yi')}亿 ths_total_out={realtime.get('total_outflow_yi')}亿 net={realtime.get('net_inflow_yi')}亿"
+                )
+            if check.get("provider_results"):
+                lines.append(f"  provider_results={check.get('provider_results')}")
         elif name.startswith("sector"):
             lines.append(f"  provider={check.get('provider')} board_count={check.get('board_count')}")
             for board in check.get("boards", [])[:3]:
@@ -215,6 +251,7 @@ def main() -> int:
     checks = {
         "package": check_package(tmpdir),
         "quotes": check_quotes(tmpdir),
+        "capital_flow": check_capital_flow(tmpdir),
         "sector_concept": check_sector(tmpdir, "concept"),
         "sector_industry": check_sector(tmpdir, "industry"),
         "news": check_news(tmpdir),

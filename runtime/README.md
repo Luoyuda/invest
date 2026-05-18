@@ -9,6 +9,7 @@ runtime/sector-state.latest.json
 runtime/recommendation-runs/latest.json
 runtime/feedback-log.jsonl
 runtime/market-data/latest-quotes.json
+runtime/capital-flow.latest.json
 runtime/market-data/sector-boards.latest.json
 runtime/search-results.latest.json
 runtime/source-audit.latest.json
@@ -125,6 +126,7 @@ runtime/outbox/pending/*.json
 
 ```text
 scripts/fetch_a_share_data.py          # 多源获取 A 股行情，默认新浪+腾讯快路径，可选东方财富/adata
+scripts/fetch_capital_flow.py          # 个股资金流，默认东方财富趋势 + 同花顺实时流入/流出可选增强
 scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/AKShare 板块快照，空结果默认降级不阻断
 scripts/run_task.py                    # cron 通用运行器：锁、总超时、重试、健康报告、最近成功兜底
 scripts/check_connectivity.py          # 一键检查包结构、行情、概念/行业板块、新闻搜索连通性
@@ -157,6 +159,14 @@ python3 scripts/check_connectivity.py \
 ```
 
 检查项包括包结构、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
+
+资金流检查：
+
+```bash
+python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20 --output runtime/capital-flow.latest.json
+```
+
+默认 `auto` 会先取东方财富 20 日主力净流入趋势，再尝试同花顺实时总流入/总流出和大/中/小单拆分。同花顺失败时应降级保留东方财富趋势，不阻断定时任务。
 
 cron 任务建议统一套一层运行器，避免任务超时后拖垮后续流程：
 

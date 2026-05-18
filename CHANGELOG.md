@@ -22,6 +22,7 @@
 - 新增 `scripts/run_task.py`，给所有 cron 提供统一的运行锁、单次总超时、重试、健康报告和最近成功兜底，避免单个任务卡到 500s 后影响后续流程。
 - 新增 `scripts/write_outbox_message.py`，将最终消息先写入 outbox 并执行表格数量校验，把内容生成和 IM 投递拆开。
 - 新增 `scripts/refresh_sector_state.py`，板块状态刷新改为有锁、分段超时、缓存兜底、刷新与消息发送解耦的 bounded job，降低高频 cron 超时风险。
+- 新增 `a-share-capital-flow` skill、`references/capital-flow.md` 和 `scripts/fetch_capital_flow.py`，支持东方财富主力资金 3/5/10/20 日趋势，并用同花顺实时资金流入/流出作为可选增强源。
 - `scripts/check_connectivity.py` 的每个检查项增加独立超时，避免诊断任务因单个外部源卡住。
 - 行情输出新增：
   - `provider_results`：每个 provider 的成功/失败、错误信息和原始 quote。

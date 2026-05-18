@@ -77,6 +77,23 @@ assert data["attempts"][0]["status"] == "passed"
 PY
 
 echo "[4/7] generate recommendation run"
+python3 scripts/fetch_capital_flow.py \
+  300308 \
+  --provider auto \
+  --days 20 \
+  --output "$tmpdir/capital-flow.latest.json" \
+  --require-results
+python3 - "$tmpdir/capital-flow.latest.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert data["status"] in {"passed", "degraded"}
+result = data["results"][0]
+assert result.get("summary", {}).get("recent_5d_main_net_inflow_yi") is not None or result.get("realtime")
+assert "provider_results" in result
+PY
 python3 scripts/collect_catalysts.py \
   --csv fixtures/catalysts.sample.csv \
   --output "$tmpdir/catalysts.latest.json"

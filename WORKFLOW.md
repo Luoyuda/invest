@@ -9,6 +9,7 @@
 | 查数据、确认代码、找公告、核验来源 | `skills/a-share-data-provider/SKILL.md` |
 | 补来源、审计来源、生成证据包 | `skills/a-share-evidence-pack/SKILL.md` |
 | 整理 A 股核心财经要闻 | `skills/a-share-market-news/SKILL.md` |
+| 分析资金流向、主力资金、订单结构 | `skills/a-share-capital-flow/SKILL.md` |
 | 分析单只或多只个股 | `skills/a-share-stock-analysis/SKILL.md` |
 | 解读财报、业绩预告、公告、问询函 | `skills/a-share-earnings-announcement-review/SKILL.md` |
 | 分析行业、赛道、板块、产业链 | `skills/a-share-sector-research/SKILL.md` |
@@ -51,6 +52,7 @@
 辅助脚本：
 
 - `scripts/fetch_a_share_data.py`：多源获取行情，默认东方财富主源、腾讯交叉校验。
+- `scripts/fetch_capital_flow.py`：获取个股资金流，默认东方财富趋势 + 同花顺实时流入/流出可选增强。
 - `scripts/fetch_sector_boards.py`：获取东方财富/搜狐板块快照，或在安装 AKShare/adata 时获取补充板块快照。
 - `scripts/run_task.py`：所有 cron 建议统一套用的任务运行器，负责运行锁、总超时、重试、最近成功兜底和健康报告。
 - `scripts/refresh_sector_state.py`：高频或定时任务应优先使用的板块状态刷新入口；内置运行锁、分段超时、缓存兜底，刷新产物与消息发送解耦。
