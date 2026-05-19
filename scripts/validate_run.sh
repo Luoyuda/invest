@@ -51,6 +51,7 @@ if selection_policy.get("style") == "short_term_mainline":
 
 recommendations = data.get("recommendations") or []
 evidence = data.get("evidence") or []
+discovery_seen = 0
 
 if not isinstance(recommendations, list):
     errors.append("run recommendations must be an array")
@@ -127,6 +128,11 @@ for idx, rec in enumerate(recommendations):
             for key in ["mainline", "fundamental_score", "capital_score", "short_term_gain_pct"]:
                 if key not in short_term_fit or short_term_fit[key] in (None, ""):
                     errors.append(f"{ctx}.short_term_fit missing {key}")
+            bucket = short_term_fit.get("selection_bucket")
+            if bucket not in {"mainline", "evidence_backed_discovery"}:
+                errors.append(f"{ctx}.short_term_fit invalid selection_bucket")
+            if bucket == "evidence_backed_discovery":
+                discovery_seen += 1
 
     overheat_risk = rec.get("overheat_risk")
     if overheat_risk == "high" and attention_level == "high" and not rec.get("fresh_catalyst_evidence_id"):
@@ -153,6 +159,16 @@ for idx, rec in enumerate(recommendations):
             continue
         if item.get("evidence_id") and item["evidence_id"] not in evidence_by_id:
             errors.append(f"{ctx}.key_data[{item_idx}] references missing evidence id {item['evidence_id']}")
+
+if selection_policy.get("style") == "short_term_mainline":
+    try:
+        discovery_limit = int(selection_policy.get("discovery_count", 1))
+    except (TypeError, ValueError):
+        discovery_limit = 1
+    if discovery_seen > discovery_limit:
+        errors.append(
+            f"short_term_mainline discovery recommendations exceed discovery_count: {discovery_seen}>{discovery_limit}"
+        )
 
 text = json.dumps(data, ensure_ascii=False)
 for pattern in [

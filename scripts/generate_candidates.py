@@ -164,6 +164,33 @@ def row_score(row: dict[str, str], sector: dict[str, Any], mainline_names: set[s
     return score
 
 
+def is_discovery_candidate(row: dict[str, str], sector: dict[str, Any], mainline_names: set[str]) -> bool:
+    """Allow a small number of evidence-backed non-mainline ideas.
+
+    The recommendation style should not become a narrow "only current top 3
+    sectors" filter, but non-mainline names need objective evidence rather than
+    just low valuation or familiarity.
+    """
+
+    if row.get("sector") in mainline_names:
+        return False
+    if parse_bool(row.get("force_include")):
+        return True
+    if sector.get("status") == "low_activity":
+        return False
+    if sector.get("status") not in {"hot", "improving", "contrarian"}:
+        return False
+    has_catalyst = bool(row.get("catalyst") or sector.get("policy_industry_catalyst"))
+    capital_or_heat = (
+        parse_float(row.get("capital_score")) > 0
+        or metric_num(sector.get("capital_flow")) > 0
+        or metric_num(sector.get("turnover_heat")) > 0
+    )
+    strength_or_improving = metric_num(sector.get("relative_strength")) > 0 or sector.get("status") == "improving"
+    not_overextended = parse_float(row.get("short_term_gain_pct")) < 25
+    return has_catalyst and capital_or_heat and strength_or_improving and not_overextended
+
+
 def build_pool_audit(
     rows: list[tuple[float, dict[str, str], dict[str, Any]]],
     sectors: dict[str, dict[str, Any]],
@@ -206,6 +233,7 @@ def build_item(
     sector_eid: str,
     tradability: dict[str, Any],
     score: float,
+    mainline_names: set[str],
 ) -> dict[str, Any]:
     attention = row.get("attention_level") or ("high" if score >= 60 else "medium")
     if tradability["execution_risk"] == "medium" and attention == "high":
@@ -221,10 +249,11 @@ def build_item(
         "recommendation_type": row.get("recommendation_type", "policy_catalyst"),
         "short_term_fit": {
             "mainline": row.get("sector"),
+            "selection_bucket": "mainline" if row.get("sector") in mainline_names else "evidence_backed_discovery",
             "fundamental_score": parse_float(row.get("fundamental_score")),
             "capital_score": parse_float(row.get("capital_score")),
             "short_term_gain_pct": parse_float(row.get("short_term_gain_pct")),
-            "style": "mainline_momentum_with_not-overextended_stock",
+            "style": "mainline_first_with_evidence_backed_discovery",
         },
         "fresh_catalyst_evidence_id": row.get("fresh_catalyst_evidence_id") or None,
         "participation_role": tradability["participation_role"],
@@ -254,6 +283,7 @@ def main() -> int:
     parser.add_argument("--output", "-o", default="runtime/candidates.latest.json")
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--mainline-count", type=int, default=3)
+    parser.add_argument("--discovery-count", type=int, default=1)
     parser.add_argument("--max-per-sector", type=int, default=2)
     args = parser.parse_args()
 
@@ -267,9 +297,7 @@ def main() -> int:
         for row in reader:
             sector = sectors.get(row.get("sector"), {})
             score = row_score(row, sector, mainline_names)
-            if sector.get("status") == "low_activity" and row.get("force_include") != "true":
-                continue
-            if mainline_names and row.get("sector") not in mainline_names and row.get("force_include") != "true":
+            if sector.get("status") == "low_activity" and not parse_bool(row.get("force_include")):
                 continue
             rows.append((score, row, sector))
     rows.sort(key=lambda item: item[0], reverse=True)
@@ -278,6 +306,7 @@ def main() -> int:
     recommendations = []
     sector_anchors = []
     selected_count = 0
+    selected_discovery_count = 0
     selected_sector_counts: dict[str, int] = {}
     for idx, (score, row, sector) in enumerate(rows, start=1):
         price_eid = f"E{idx}P"
@@ -313,17 +342,26 @@ def main() -> int:
             ]
         )
         tradability = tradability_flags(row)
-        item = build_item(row, sector, price_eid, sector_eid, tradability, score)
+        item = build_item(row, sector, price_eid, sector_eid, tradability, score, mainline_names)
         if tradability["participation_role"] == "sector_anchor":
             sector_anchors.append(item)
             continue
         if selected_count >= args.limit:
             continue
         sector_name = row.get("sector") or "unknown"
+        in_mainline = sector_name in mainline_names
+        is_discovery = not in_mainline
+        if is_discovery:
+            if not is_discovery_candidate(row, sector, mainline_names):
+                continue
+            if selected_discovery_count >= args.discovery_count:
+                continue
         if selected_sector_counts.get(sector_name, 0) >= args.max_per_sector:
             continue
         recommendations.append(item)
         selected_sector_counts[sector_name] = selected_sector_counts.get(sector_name, 0) + 1
+        if is_discovery:
+            selected_discovery_count += 1
         selected_count += 1
 
     payload = {
@@ -335,9 +373,10 @@ def main() -> int:
         "selection_policy": {
             "style": "short_term_mainline",
             "mainline_count": args.mainline_count,
+            "discovery_count": args.discovery_count,
             "selected_mainlines": [item.get("name") for item in mainlines],
             "max_per_sector": args.max_per_sector,
-            "reason": "select 2-3 fast and funded mainlines first, then choose fundamentally better stocks that have not overextended",
+            "reason": "prioritize 2-3 fast and funded mainlines while reserving a small evidence-backed discovery slot for overlooked improving opportunities",
         },
         "evidence": evidence,
     }
