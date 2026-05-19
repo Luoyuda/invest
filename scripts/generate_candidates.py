@@ -238,6 +238,8 @@ def build_item(
     attention = row.get("attention_level") or ("high" if score >= 60 else "medium")
     if tradability["execution_risk"] == "medium" and attention == "high":
         attention = "medium"
+    in_mainline = row.get("sector") in mainline_names
+    autonomy_role = "preference_aligned_mainline" if in_mainline else "system_initiated_discovery"
     return {
         "name": row.get("name"),
         "code": row.get("code"),
@@ -249,11 +251,24 @@ def build_item(
         "recommendation_type": row.get("recommendation_type", "policy_catalyst"),
         "short_term_fit": {
             "mainline": row.get("sector"),
-            "selection_bucket": "mainline" if row.get("sector") in mainline_names else "evidence_backed_discovery",
+            "selection_bucket": "mainline" if in_mainline else "evidence_backed_discovery",
             "fundamental_score": parse_float(row.get("fundamental_score")),
             "capital_score": parse_float(row.get("capital_score")),
             "short_term_gain_pct": parse_float(row.get("short_term_gain_pct")),
             "style": "mainline_first_with_evidence_backed_discovery",
+        },
+        "autonomy": {
+            "role": autonomy_role,
+            "reason": row.get("autonomy_reason")
+            or (
+                "符合用户短线主线偏好"
+                if in_mainline
+                else "非用户显式主线，但催化、资金/成交或相对强度已有改善，作为系统主动发现"
+            ),
+            "evidence_basis": row.get("autonomy_evidence_basis")
+            or ("mainline_score" if in_mainline else "catalyst_plus_capital_or_strength_improvement"),
+            "not_selected_only_because": row.get("not_selected_only_because")
+            or ("user_preference" if in_mainline else "low_valuation_or_familiarity"),
         },
         "fresh_catalyst_evidence_id": row.get("fresh_catalyst_evidence_id") or None,
         "participation_role": tradability["participation_role"],
@@ -372,6 +387,7 @@ def main() -> int:
         "candidate_pool_audit": build_pool_audit(rows, sectors, mainlines),
         "selection_policy": {
             "style": "short_term_mainline",
+            "autonomy_mode": "bounded",
             "mainline_count": args.mainline_count,
             "discovery_count": args.discovery_count,
             "selected_mainlines": [item.get("name") for item in mainlines],

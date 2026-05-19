@@ -34,6 +34,7 @@
   },
   "selection_policy": {
     "style": "short_term_mainline",
+    "autonomy_mode": "bounded",
     "mainline_count": 3,
     "discovery_count": 1,
     "selected_mainlines": [],
@@ -76,6 +77,12 @@
     "capital_score": 12,
     "short_term_gain_pct": 12.3,
     "style": "mainline_first_with_evidence_backed_discovery"
+  },
+  "autonomy": {
+    "role": "preference_aligned_mainline",
+    "reason": "符合用户短线主线偏好",
+    "evidence_basis": "mainline_score",
+    "not_selected_only_because": "user_preference"
   },
   "exclusion_reason": [],
   "fresh_catalyst_evidence_id": "E3",
@@ -171,6 +178,8 @@
 - `selection_policy.style=short_term_mainline` 时，必须写明 `selection_policy.selected_mainlines`；若 `candidate_pool_audit.missing_mainlines` 非空，最终回答必须说明主线候选池缺口。
 - 短线推荐必须包含 `short_term_fit`，用于说明标的是 `mainline` 还是 `evidence_backed_discovery`、所属方向、资金/基本面评分和短期涨幅是否已透支。
 - `evidence_backed_discovery` 只是防漏网槽位，默认不超过 `selection_policy.discovery_count`；不能用来绕过低活跃、无催化、无资金验证或过度上涨限制。
+- `selection_policy.autonomy_mode=bounded` 表示系统有有限自主性：可以主动发现用户未显式关注的方向，但每个推荐项必须包含 `autonomy`。
+- `autonomy.role=system_initiated_discovery` 的标的必须写明 `reason`、`evidence_basis` 和 `not_selected_only_because`，证明它不是只因用户偏好、低估值或熟悉度入选。
 - 推荐清单默认同一板块不超过 2 只，除非候选池覆盖审计能证明其它热门/改善方向确实没有合格标的。
 - 不得输出无条件买入、卖出、加仓、仓位或收益承诺。
 

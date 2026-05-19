@@ -6,6 +6,7 @@
 
 - 将个股推荐默认风格调整为短线主线法：先筛选 2-3 条涨幅最快、相对强度靠前、资金流入或成交热度高的主线，再在主线内挑选业绩/质地较好且尚未过度上涨的标的。
 - 在短线主线框架内新增 `证据型发现` 槽位：默认最多 1 只，覆盖未进入最热 2-3 主线但已有催化、资金/成交改善、相对强度改善且未明显过热的漏网机会。
+- 新增有限自主性规则：`selection_policy.autonomy_mode=bounded`，推荐项必须保留 `autonomy` 字段，说明系统主动发现或偏好内主线的证据依据，避免只迎合用户显式偏好。
 - `a-share-stock-recommendation` 明确新增短线主线筛选、主线锚点、短线适配字段和新的排序权重：
   - 板块涨幅、相对强度与成交热度 25%。
   - 主力资金流入与交易结构 25%。
@@ -14,7 +15,7 @@
   - 未过度上涨与可参与性 10%。
   - 估值、风险和来源可信度 5%。
 - `scripts/generate_candidates.py` 新增短线主线排序和证据型发现过滤；连续涨停、开盘即封板或短期涨幅过大的股票仍进入 `sector_anchors`，不进入推荐前 5。
-- 推荐 run schema 新增 `selection_policy.style=short_term_mainline`、`selected_mainlines`、`missing_mainlines` 和 `short_term_fit`，方便后续复盘推荐是否真的来自主线。
+- 推荐 run schema 新增 `selection_policy.style=short_term_mainline`、`selected_mainlines`、`missing_mainlines`、`short_term_fit` 和 `autonomy`，方便后续复盘推荐是否真的来自主线或有效主动发现。
 - `scripts/validate_run.sh` 增加短线主线校验，确保最终结构化结果保留主线选择和个股短线适配依据。
 - `USER_PROFILE.md` 同步用户偏好：短线推荐不追一字板/连续涨停，低位低估值但无资金和催化验证的方向不进入默认推荐。
 

@@ -133,6 +133,18 @@ for idx, rec in enumerate(recommendations):
                 errors.append(f"{ctx}.short_term_fit invalid selection_bucket")
             if bucket == "evidence_backed_discovery":
                 discovery_seen += 1
+        autonomy = rec.get("autonomy")
+        if not isinstance(autonomy, dict) or not autonomy:
+            errors.append(f"{ctx} short_term_mainline requires autonomy")
+        else:
+            for key in ["role", "reason", "evidence_basis", "not_selected_only_because"]:
+                if not autonomy.get(key):
+                    errors.append(f"{ctx}.autonomy missing {key}")
+            if short_term_fit and short_term_fit.get("selection_bucket") == "evidence_backed_discovery":
+                if autonomy.get("role") != "system_initiated_discovery":
+                    errors.append(f"{ctx}.autonomy discovery must use role=system_initiated_discovery")
+                if autonomy.get("not_selected_only_because") in {"user_preference", "low_valuation", "familiarity"}:
+                    errors.append(f"{ctx}.autonomy discovery must not be selected only because of preference/valuation/familiarity")
 
     overheat_risk = rec.get("overheat_risk")
     if overheat_risk == "high" and attention_level == "high" and not rec.get("fresh_catalyst_evidence_id"):
