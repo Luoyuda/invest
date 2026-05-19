@@ -27,12 +27,17 @@
     "sector_counts": {},
     "candidate_source_counts": {},
     "preferred_sectors": [],
+    "selected_mainlines": [],
+    "missing_mainlines": [],
     "missing_preferred_sectors": [],
     "warnings": []
   },
   "selection_policy": {
+    "style": "short_term_mainline",
+    "mainline_count": 3,
+    "selected_mainlines": [],
     "max_per_sector": 2,
-    "reason": "limit availability bias from a manually or partially collected stock pool"
+    "reason": "select 2-3 fast and funded mainlines first, then choose fundamentally better stocks that have not overextended"
   },
   "evidence": [],
   "validation": {
@@ -62,6 +67,13 @@
     "quick_limit_up": false,
     "limit_up_count_5d": 0,
     "short_term_gain_pct": 12.3
+  },
+  "short_term_fit": {
+    "mainline": "AI算力",
+    "fundamental_score": 16,
+    "capital_score": 12,
+    "short_term_gain_pct": 12.3,
+    "style": "mainline_momentum_with_not-overextended_stock"
   },
   "exclusion_reason": [],
   "fresh_catalyst_evidence_id": "E3",
@@ -154,6 +166,8 @@
 - `execution_risk=high` 的标的不得进入 `recommendations[]`。
 - 开盘即涨停、一字板、快速封板、近 5 日涨停 `>=2` 或近 10 日涨幅 `>=35%` 的标的，必须放入 `sector_anchors[]`，不得进入推荐前 5。
 - `candidate_pool_audit.missing_preferred_sectors` 非空时，最终回答必须说明候选池覆盖不足，不能把“没拉到数据的方向”当作已经排除。
+- `selection_policy.style=short_term_mainline` 时，必须写明 `selection_policy.selected_mainlines`；若 `candidate_pool_audit.missing_mainlines` 非空，最终回答必须说明主线候选池缺口。
+- 短线推荐必须包含 `short_term_fit`，用于说明所属主线、资金/基本面评分和短期涨幅是否已透支。
 - 推荐清单默认同一板块不超过 2 只，除非候选池覆盖审计能证明其它热门/改善方向确实没有合格标的。
 - 不得输出无条件买入、卖出、加仓、仓位或收益承诺。
 

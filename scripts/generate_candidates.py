@@ -28,11 +28,51 @@ def sector_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def preferred_sectors(state: dict[str, Any]) -> list[str]:
-    result = []
-    for item in state.get("sectors", []):
-        if item.get("status") in {"hot", "improving"} and item.get("name"):
-            result.append(item["name"])
-    return result
+    return [item["name"] for item in rank_mainlines(state, limit=6) if item.get("name")]
+
+
+def metric_num(value: Any, default: float = 0.0) -> float:
+    try:
+        if value in (None, ""):
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def sector_short_term_score(sector: dict[str, Any]) -> float:
+    """Score sectors for the user's short-term style.
+
+    Short-term recommendation starts from the fastest, most funded mainlines,
+    then looks for still-participable stocks inside those directions.
+    """
+
+    status = sector.get("status")
+    score = 0.0
+    if status == "hot":
+        score += 35
+    elif status == "improving":
+        score += 25
+    elif status == "contrarian":
+        score += 5
+    elif status == "low_activity":
+        score -= 50
+    score += min(max(metric_num(sector.get("relative_strength")), -10), 20) * 1.4
+    score += min(max(metric_num(sector.get("capital_flow")), -20), 20) * 1.2
+    score += min(max(metric_num(sector.get("turnover_heat")), -20), 20) * 0.6
+    score += min(max(metric_num(sector.get("breadth")) * 10, 0), 10)
+    if sector.get("policy_industry_catalyst"):
+        score += 12
+    if sector.get("overheat_risk") == "high":
+        score -= 12
+    return score
+
+
+def rank_mainlines(state: dict[str, Any], limit: int = 3) -> list[dict[str, Any]]:
+    sectors = [item for item in state.get("sectors", []) if item.get("name")]
+    viable = [item for item in sectors if item.get("status") in {"hot", "improving"}]
+    ranked = sorted(viable, key=sector_short_term_score, reverse=True)
+    return ranked[:limit]
 
 
 def parse_bool(value: str | None) -> bool:
@@ -90,32 +130,45 @@ def tradability_flags(row: dict[str, str]) -> dict[str, Any]:
     return {"participation_role": role, "execution_risk": risk, "reasons": reasons, "flags": flags}
 
 
-def row_score(row: dict[str, str], sector: dict[str, Any]) -> float:
+def row_score(row: dict[str, str], sector: dict[str, Any], mainline_names: set[str]) -> float:
     score = 0.0
     if sector.get("status") == "hot":
-        score += 35
+        score += 25
     elif sector.get("status") == "improving":
-        score += 30
+        score += 20
     elif sector.get("status") == "contrarian":
         score += 10
     elif sector.get("status") == "low_activity":
         score -= 20
-    if row.get("catalyst"):
+    if row.get("sector") in mainline_names:
         score += 25
-    try:
-        score += min(max(float(row.get("fundamental_score", "0")), 0), 20)
-    except ValueError:
-        pass
-    try:
-        score += min(max(float(row.get("capital_score", "0")), -10), 15)
-    except ValueError:
-        pass
+    else:
+        score -= 15
+    score += min(max(metric_num(sector.get("relative_strength")), -10), 20) * 0.8
+    score += min(max(metric_num(sector.get("capital_flow")), -20), 20) * 0.8
+    if row.get("catalyst"):
+        score += 15
+    score += min(max(parse_float(row.get("fundamental_score")), 0), 20)
+    score += min(max(parse_float(row.get("capital_score")), -10), 15)
+    gain = parse_float(row.get("short_term_gain_pct"))
+    if gain <= 8:
+        score += 10
+    elif gain <= 15:
+        score += 6
+    elif gain <= 25:
+        score -= 4
+    elif gain < 35:
+        score -= 10
     if sector.get("overheat_risk") == "high":
         score -= 20
     return score
 
 
-def build_pool_audit(rows: list[tuple[float, dict[str, str], dict[str, Any]]], sectors: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def build_pool_audit(
+    rows: list[tuple[float, dict[str, str], dict[str, Any]]],
+    sectors: dict[str, dict[str, Any]],
+    mainlines: list[dict[str, Any]],
+) -> dict[str, Any]:
     sector_counts: dict[str, int] = {}
     source_counts: dict[str, int] = {}
     for _, row, _ in rows:
@@ -125,9 +178,13 @@ def build_pool_audit(rows: list[tuple[float, dict[str, str], dict[str, Any]]], s
         source_counts[source] = source_counts.get(source, 0) + 1
     preferred = preferred_sectors({"sectors": list(sectors.values())})
     missing_preferred = [name for name in preferred if name not in sector_counts]
+    selected_mainlines = [item.get("name") for item in mainlines if item.get("name")]
+    missing_mainlines = [name for name in selected_mainlines if name not in sector_counts]
     warnings = []
     if missing_preferred:
         warnings.append("preferred sectors missing from stock pool; recommendation may have availability bias")
+    if missing_mainlines:
+        warnings.append("selected short-term mainlines missing from stock pool; recommendation may miss active opportunities")
     if len(sector_counts) < 3:
         warnings.append("stock pool covers fewer than 3 sectors; diversify upstream candidate collection")
     return {
@@ -135,6 +192,8 @@ def build_pool_audit(rows: list[tuple[float, dict[str, str], dict[str, Any]]], s
         "sector_counts": sector_counts,
         "candidate_source_counts": source_counts,
         "preferred_sectors": preferred,
+        "selected_mainlines": selected_mainlines,
+        "missing_mainlines": missing_mainlines,
         "missing_preferred_sectors": missing_preferred,
         "warnings": warnings,
     }
@@ -160,6 +219,13 @@ def build_item(
         "overheat_risk": sector.get("overheat_risk", "low"),
         "attention_level": attention,
         "recommendation_type": row.get("recommendation_type", "policy_catalyst"),
+        "short_term_fit": {
+            "mainline": row.get("sector"),
+            "fundamental_score": parse_float(row.get("fundamental_score")),
+            "capital_score": parse_float(row.get("capital_score")),
+            "short_term_gain_pct": parse_float(row.get("short_term_gain_pct")),
+            "style": "mainline_momentum_with_not-overextended_stock",
+        },
         "fresh_catalyst_evidence_id": row.get("fresh_catalyst_evidence_id") or None,
         "participation_role": tradability["participation_role"],
         "execution_risk": tradability["execution_risk"],
@@ -187,18 +253,23 @@ def main() -> int:
     parser.add_argument("--sector-state", default="runtime/sector-state.latest.json")
     parser.add_argument("--output", "-o", default="runtime/candidates.latest.json")
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--mainline-count", type=int, default=3)
     parser.add_argument("--max-per-sector", type=int, default=2)
     args = parser.parse_args()
 
     sector_state = load_json(args.sector_state)
     sectors = sector_map(sector_state)
+    mainlines = rank_mainlines(sector_state, limit=args.mainline_count)
+    mainline_names = {item["name"] for item in mainlines if item.get("name")}
     rows = []
     with Path(args.stocks_csv).open("r", encoding="utf-8-sig", newline="") as file:
         reader = csv.DictReader(file)
         for row in reader:
             sector = sectors.get(row.get("sector"), {})
-            score = row_score(row, sector)
+            score = row_score(row, sector, mainline_names)
             if sector.get("status") == "low_activity" and row.get("force_include") != "true":
+                continue
+            if mainline_names and row.get("sector") not in mainline_names and row.get("force_include") != "true":
                 continue
             rows.append((score, row, sector))
     rows.sort(key=lambda item: item[0], reverse=True)
@@ -260,10 +331,13 @@ def main() -> int:
         "run_time": datetime.now().astimezone().isoformat(),
         "recommendations": recommendations,
         "sector_anchors": sector_anchors,
-        "candidate_pool_audit": build_pool_audit(rows, sectors),
+        "candidate_pool_audit": build_pool_audit(rows, sectors, mainlines),
         "selection_policy": {
+            "style": "short_term_mainline",
+            "mainline_count": args.mainline_count,
+            "selected_mainlines": [item.get("name") for item in mainlines],
             "max_per_sector": args.max_per_sector,
-            "reason": "limit availability bias from a manually or partially collected stock pool",
+            "reason": "select 2-3 fast and funded mainlines first, then choose fundamentally better stocks that have not overextended",
         },
         "evidence": evidence,
     }

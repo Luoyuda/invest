@@ -39,6 +39,16 @@ if pool_audit:
     for warning in pool_audit.get("warnings") or []:
         warnings.append(f"candidate_pool_audit: {warning}")
 
+selection_policy = data.get("selection_policy") or {}
+if selection_policy.get("style") == "short_term_mainline":
+    selected_mainlines = selection_policy.get("selected_mainlines") or []
+    if not selected_mainlines:
+        errors.append("selection_policy short_term_mainline requires selected_mainlines")
+    if pool_audit.get("missing_mainlines"):
+        warnings.append(
+            "candidate_pool_audit: selected short-term mainlines missing from stock pool"
+        )
+
 recommendations = data.get("recommendations") or []
 evidence = data.get("evidence") or []
 
@@ -108,6 +118,15 @@ for idx, rec in enumerate(recommendations):
             pass
     if sector_status == "low_activity" and attention_level == "high":
         errors.append(f"{ctx} low_activity sector cannot have high attention")
+
+    if selection_policy.get("style") == "short_term_mainline":
+        short_term_fit = rec.get("short_term_fit")
+        if not isinstance(short_term_fit, dict) or not short_term_fit:
+            errors.append(f"{ctx} short_term_mainline requires short_term_fit")
+        else:
+            for key in ["mainline", "fundamental_score", "capital_score", "short_term_gain_pct"]:
+                if key not in short_term_fit or short_term_fit[key] in (None, ""):
+                    errors.append(f"{ctx}.short_term_fit missing {key}")
 
     overheat_risk = rec.get("overheat_risk")
     if overheat_risk == "high" and attention_level == "high" and not rec.get("fresh_catalyst_evidence_id"):
