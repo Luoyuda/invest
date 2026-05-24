@@ -134,6 +134,29 @@ data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert data["recommendations"][0]["name"] == "样例股份"
 assert data["sector_anchors"][0]["name"] == "样例锚点"
 PY
+(
+  cd "$tmpdir"
+  INVEST_SESSION_ID=smoke-session python3 "$ROOT_DIR/scripts/generate_recommendation_run.py" \
+    --candidates "$ROOT_DIR/fixtures/candidates.valid.json" \
+    --sector-state "$tmpdir/sector-state.latest.json" \
+    --latest-output "$tmpdir/latest-pointer.json" >/tmp/lobster-isolated-run.out
+)
+python3 - "$tmpdir/runtime/recommendation-runs" "$tmpdir/latest-pointer.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+runs_dir = Path(sys.argv[1])
+latest_pointer = Path(sys.argv[2])
+items = sorted(runs_dir.glob("*/smoke-session/fixture-valid-0900.json"))
+assert len(items) == 1, items
+data = json.loads(items[0].read_text(encoding="utf-8"))
+assert data["run_session_id"] == "smoke-session"
+assert data["run_artifact_path"].endswith("/smoke-session/fixture-valid-0900.json")
+latest = json.loads(latest_pointer.read_text(encoding="utf-8"))
+assert latest["run_artifact_path"] == data["run_artifact_path"]
+PY
+rm -f /tmp/lobster-isolated-run.out
 
 echo "[5/7] validate positive run"
 bash scripts/validate_run.sh "$tmpdir/latest.json"

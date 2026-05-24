@@ -121,8 +121,8 @@ Quality Checklist：
 - 状态过期且不能刷新：不得给高关注推荐，只能低确定性推荐或暂不推荐。
 - 状态与当日重大催化/重大负面冲突：相关方向降级并写明冲突。
 - 每日快跑不负责全市场板块重算；全市场重算交给盘后或周度任务。
-- 输出前必须生成 `runtime/recommendation-runs/latest.json`，按 `references/run-output-schema.md` 组织结构化结果，再渲染最终回答。
-- 输出前应运行 `scripts/validate_run.sh runtime/recommendation-runs/latest.json`；校验失败时不得直接输出高关注推荐。
+- 输出前必须用 `scripts/generate_recommendation_run.py` 生成按日期和会话隔离的 run 文件（默认路径为 `runtime/recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json`），按 `references/run-output-schema.md` 组织结构化结果，再渲染最终回答。
+- 输出前应对本次 run 文件运行 `scripts/validate_run.sh <run_artifact_path>`；校验失败时不得直接输出高关注推荐。
 - 候选池必须做覆盖审计：如果某些热门/景气改善方向没有候选股数据，必须写明“候选池未覆盖”，不得把未拉到数据的标的当作已排除。
 - `selection_policy.style` 默认写 `short_term_mainline`，并在 `selected_mainlines` 中记录实际选出的 2-3 条主线。
 - `selection_policy.autonomy_mode` 默认写 `bounded`，表示系统有有限自主发现能力，但必须受证据和数量约束。
@@ -333,7 +333,7 @@ Quality Checklist：
 ## Quality Checklist
 
 - 每只推荐是否有来源。
-- 是否生成 `runtime/recommendation-runs/latest.json` 并通过 `scripts/validate_run.sh`。
+- 是否生成按日期和会话隔离的 recommendation run，并通过 `scripts/validate_run.sh`。
 - 是否先完成板块热度筛选，再进入个股推荐。
 - 高关注标的是否来自强势、景气改善或明确催化板块。
 - 当期判定为低活跃的方向是否有相对强度改善或明确催化；否则是否放入暂不推荐。

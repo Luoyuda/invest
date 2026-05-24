@@ -171,7 +171,7 @@ lobster-assistant/
 
 日常推荐链路不执行完整三角色 review。V1 自我迭代只消费运行态产物和失败记录：
 
-- `runtime/recommendation-runs/latest.json`
+- `runtime/recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json`
 - `runtime/feedback-log.jsonl`
 - `scripts/validate_run.sh` 的失败结果
 

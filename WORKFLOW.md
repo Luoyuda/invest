@@ -41,7 +41,7 @@
   -> 检查 valid_until
   -> 刷新上一交易日收盘价
   -> 检查重大催化/重大负面
-  -> 生成 runtime/recommendation-runs/latest.json
+  -> 生成 runtime/recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json
   -> scripts/validate_run.sh 校验
   -> 渲染最终推荐清单
   -> 失败/反馈写入 runtime/feedback-log.jsonl
@@ -57,7 +57,7 @@
 - `scripts/run_task.py`：所有 cron 建议统一套用的任务运行器，负责运行锁、总超时、重试、最近成功兜底和健康报告。
 - `scripts/refresh_sector_state.py`：高频或定时任务应优先使用的板块状态刷新入口；内置运行锁、分段超时、缓存兜底，刷新产物与消息发送解耦。
 - `scripts/write_outbox_message.py`：把最终消息先写入 outbox 并校验表格数量，IM 投递失败不应影响上游任务状态。
-- `scripts/search_news.py`：A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底，Brave/Tavily 为可选 API key 源。
+- `scripts/search_news.py`：A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底，Tavily 为可选 API key 源。
 - `scripts/build_sector_metrics.py`：从 CSV/导出数据构建板块指标输入。
 - `scripts/generate_sector_state.py`：生成运行态板块状态。
 - `scripts/collect_catalysts.py`：收集公告、政策、产业催化记录。
