@@ -7,6 +7,8 @@
 ```json
 {
   "run_id": "2026-05-13-0900",
+  "run_session_id": "pre-open-session",
+  "run_artifact_path": "runtime/recommendation-runs/2026-05-13/pre-open-session/2026-05-13-0900.json",
   "run_time": "2026-05-13T09:00:00+08:00",
   "task_type": "daily_0900_recommendation",
   "sector_state_ref": {
@@ -197,8 +199,12 @@ V1 推荐 run 可以由 `scripts/generate_recommendation_run.py` 从结构化候
 生成后必须运行：
 
 ```bash
-bash scripts/validate_run.sh runtime/recommendation-runs/latest.json
-python3 scripts/audit_run_sources.py runtime/recommendation-runs/latest.json --skip-network
+python3 scripts/generate_recommendation_run.py \
+  --candidates runtime/candidates.latest.json \
+  --sector-state runtime/sector-state.latest.json
+
+bash scripts/validate_run.sh <本次输出的 run_artifact_path>
+python3 scripts/audit_run_sources.py <本次输出的 run_artifact_path> --skip-network
 ```
 
 需要联网审计来源链接时，去掉 `--skip-network`。

@@ -3,7 +3,7 @@
 
 The script records provider failures instead of blocking downstream workflows.
 It uses A-share focused site-scoped RSS discovery by default, and supports
-Brave/Tavily when API keys are configured.
+Tavily when an API key is configured.
 """
 
 from __future__ import annotations
@@ -48,15 +48,6 @@ def post_json(url: str, payload: dict[str, Any], headers: dict[str, str], timeou
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json", "User-Agent": "lobster-invest/1.0", **headers},
         method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def get_json(url: str, params: dict[str, str], headers: dict[str, str], timeout: float) -> dict[str, Any]:
-    request = urllib.request.Request(
-        f"{url}?{urllib.parse.urlencode(params)}",
-        headers={"Accept": "application/json", "User-Agent": "lobster-invest/1.0", **headers},
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
@@ -210,35 +201,10 @@ def search_tavily(query: str, timeout: float, max_results: int) -> list[dict[str
     return results
 
 
-def search_brave(query: str, timeout: float, max_results: int) -> list[dict[str, Any]]:
-    api_key = os.environ.get("BRAVE_API_KEY", "")
-    if not api_key:
-        raise RuntimeError("BRAVE_API_KEY is not configured")
-    data = get_json(
-        "https://api.search.brave.com/res/v1/web/search",
-        {"q": query, "count": str(max_results), "search_lang": "zh-hans", "country": "CN"},
-        {"X-Subscription-Token": api_key},
-        timeout,
-    )
-    results = []
-    for item in ((data.get("web") or {}).get("results") or []):
-        results.append(
-            {
-                "title": item.get("title"),
-                "url": item.get("url"),
-                "snippet": item.get("description"),
-                "published_at": item.get("age"),
-                "provider": "brave",
-            }
-        )
-    return results
-
-
 PROVIDERS = {
     "a_share_rss": search_a_share_rss,
     "a_share_homepages": search_a_share_homepages,
     "google_news_rss": search_google_news_rss,
-    "brave": search_brave,
     "tavily": search_tavily,
 }
 
@@ -254,7 +220,7 @@ def parse_providers(value: str) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Search news with provider fallback")
     parser.add_argument("query", help="Search query")
-    parser.add_argument("--providers", default="a_share_rss,a_share_homepages,tavily,google_news_rss,brave")
+    parser.add_argument("--providers", default="a_share_rss,a_share_homepages,tavily,google_news_rss")
     parser.add_argument("--timeout", type=float, default=8.0, help="Per-provider timeout seconds")
     parser.add_argument("--overall-timeout", type=float, default=20.0, help="Overall search budget seconds")
     parser.add_argument("--max-results", type=int, default=5)

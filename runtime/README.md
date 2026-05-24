@@ -6,6 +6,7 @@
 
 ```text
 runtime/sector-state.latest.json
+runtime/recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json
 runtime/recommendation-runs/latest.json
 runtime/feedback-log.jsonl
 runtime/market-data/latest-quotes.json
@@ -50,13 +51,17 @@ runtime/outbox/pending/*.json
 - `downgrade_triggers`
 - `source_refs`
 
-## 2. recommendation-runs/latest.json
+## 2. recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json
 
 用途：保存一次推荐任务的结构化输出。最终用户回答应从该文件渲染，而不是直接绕过结构化结果。
+
+推荐任务产物必须按日期和会话隔离，避免不同对话或定时任务互相覆盖。`runtime/recommendation-runs/latest.json` 仅是便捷指针，不作为唯一归档文件。
 
 必须包含：
 
 - `run_id`
+- `run_session_id`
+- `run_artifact_path`
 - `run_time`
 - `task_type`
 - `sector_state_ref`
@@ -112,8 +117,8 @@ runtime/outbox/pending/*.json
 -> 刷新上一交易日收盘价
 -> 检查重大催化/重大负面
 -> 将开盘板、快速封板、连续板、短期涨幅过大的标的降级为 sector_anchors
--> 生成 recommendation-runs/latest.json
--> scripts/validate_run.sh 校验
+-> 生成 recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json
+-> scripts/validate_run.sh <本次 run 文件> 校验
 -> 渲染最终推荐清单
 -> 失败/反馈写入 feedback-log.jsonl
 ```
@@ -137,7 +142,7 @@ scripts/refresh_sector_state.py        # 有锁、有超时、有缓存兜底地
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
 scripts/collect_catalysts.py           # 从公告/政策/产业 CSV 收集催化记录
 scripts/generate_candidates.py         # 从股票池和板块状态生成候选输入
-scripts/generate_recommendation_run.py # 从结构化候选生成 recommendation-runs/latest.json
+scripts/generate_recommendation_run.py # 从结构化候选生成按日期/会话隔离的 recommendation run
 scripts/validate_run.sh                # 硬规则校验 recommendation run
 scripts/audit_run_sources.py           # 检查 evidence 字段和来源链接可访问性
 scripts/validate_answer_format.py      # 检查最终 Markdown 回答表格数量，避免超过 IM API 限制

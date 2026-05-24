@@ -35,7 +35,6 @@
 | `a_share_rss` | A 股财经新闻发现 | S3 | 无需 API key；对财联社、证券时报、东方财富、新浪财经等做站点定向 RSS 查询 | 默认免费搜索源；只作为新闻发现入口，核心事实仍需回到原文核验 |
 | `a_share_homepages` | A 股财经首页兜底 | S3 | 无需 API key；抓取财联社、证券时报、东方财富、新浪财经首页 | 当 RSS 返回空结果时兜底，结果是入口线索，不是已核验事实 |
 | `google_news_rss` | 通用新闻搜索 | S4 | 无需 API key 的 RSS | 仅作兜底，不作为 A 股默认搜索能力 |
-| `brave` | 新闻/网页搜索 | S3 | 需要 `BRAVE_API_KEY`，可能涉及付费/额度 | 可选搜索源；未配置或超时不得阻断全链路 |
 | `tavily` | 新闻/网页搜索 | S3 | 需要 `TAVILY_API_KEY`，可能涉及付费/额度 | 可选搜索源；未配置或超时不得阻断全链路 |
 
 东方财富和同花顺的判断：
@@ -59,11 +58,11 @@ python3 scripts/fetch_sector_boards.py --provider adata_east --kind concept
 python3 scripts/fetch_sector_boards.py --provider adata_ths --kind concept
 python3 scripts/fetch_sector_boards.py --provider akshare_ths --kind industry
 python3 scripts/search_news.py "半导体 政策 催化"
-python3 scripts/search_news.py "半导体 政策 催化" --providers a_share_rss,brave,tavily
+python3 scripts/search_news.py "半导体 政策 催化" --providers a_share_rss,tavily
 ```
 
 `adata`、`adata_east`、`adata_ths`、`akshare_ths` 都是可选能力；没有安装对应 SDK 时脚本必须记录错误并降级，不能编造数据。
-Brave/Tavily 是可选 API key provider，不应作为默认唯一搜索能力；没有配置 key 或超时时，脚本必须记录 `provider_results` 并继续使用可用 provider。所有搜索结果只是发现入口，最终事实必须打开原文或官方来源核验。
+Tavily 是可选 API key provider，不应作为默认唯一搜索能力；没有配置 key 或超时时，脚本必须记录 `provider_results` 并继续使用可用 provider。所有搜索结果只是发现入口，最终事实必须打开原文或官方来源核验。
 
 ## 1.0 稳定性分层
 

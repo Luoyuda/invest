@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate recommendation-runs/latest.json from structured candidates."""
+"""Generate an isolated recommendation run artifact from structured candidates."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,31 @@ def load_json(path: str) -> Any:
 
 def sector_map(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {item.get("name"): item for item in state.get("sectors", []) if item.get("name")}
+
+
+def slug(value: str) -> str:
+    normalized = "".join(char if char.isalnum() or char in "._-" else "-" for char in value.strip())
+    normalized = normalized.strip(".-_")
+    return normalized or "session"
+
+
+def default_session_id(run_id: str) -> str:
+    for key in ("INVEST_SESSION_ID", "CODEX_SESSION_ID", "SESSION_ID"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return slug(value)
+    return slug(run_id)
+
+
+def default_output_path(now: datetime, run_id: str, session_id: str) -> Path:
+    date_part = now.strftime("%Y-%m-%d")
+    filename = f"{slug(run_id)}.json"
+    return Path("runtime/recommendation-runs") / date_part / slug(session_id) / filename
+
+
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def normalize_candidate(candidate: dict[str, Any], sectors: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -58,7 +84,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate recommendation run JSON")
     parser.add_argument("--candidates", "-c", required=True, help="JSON with recommendations[]/evidence[]")
     parser.add_argument("--sector-state", "-s", default="runtime/sector-state.latest.json")
-    parser.add_argument("--output", "-o", default="runtime/recommendation-runs/latest.json")
+    parser.add_argument("--output", "-o", default="", help="Default: runtime/recommendation-runs/<date>/<session>/<run_id>.json")
+    parser.add_argument("--session-id", default="", help="Conversation/session id for run isolation")
+    parser.add_argument("--latest-output", default="", help="Convenience latest pointer. Default is only used with isolated output.")
+    parser.add_argument("--no-latest", action="store_true", help="Do not update the latest pointer")
     parser.add_argument("--task-type", default="daily_0900_recommendation")
     args = parser.parse_args()
 
@@ -66,6 +95,10 @@ def main() -> int:
     sector_state = load_json(args.sector_state)
     sectors = sector_map(sector_state)
     now = datetime.now().astimezone()
+    run_id = candidates_payload.get("run_id") or now.strftime("%Y%m%d-%H%M%S")
+    session_id = slug(args.session_id) if args.session_id else default_session_id(run_id)
+    output = Path(args.output) if args.output else default_output_path(now, run_id, session_id)
+    latest_output_arg = args.latest_output or ("" if args.output else "runtime/recommendation-runs/latest.json")
 
     recommendations_input = candidates_payload.get("recommendations", [])
     sector_anchors_input = candidates_payload.get("sector_anchors", [])
@@ -74,7 +107,9 @@ def main() -> int:
     sector_anchors = [normalize_candidate(item, sectors) for item in sector_anchors_input]
 
     payload = {
-        "run_id": candidates_payload.get("run_id") or now.strftime("%Y%m%d-%H%M%S"),
+        "run_id": run_id,
+        "run_session_id": session_id,
+        "run_artifact_path": str(output),
         "run_time": candidates_payload.get("run_time") or now.isoformat(),
         "task_type": args.task_type,
         "sector_state_ref": {
@@ -99,10 +134,14 @@ def main() -> int:
         "validation": {"status": "pending", "checked_at": None, "errors": [], "warnings": []},
     }
 
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json(output, payload)
+    if latest_output_arg and not args.no_latest:
+        latest_output = Path(latest_output_arg)
+        if latest_output != output:
+            write_json(latest_output, payload)
     print(f"Wrote {output}")
+    if latest_output_arg and not args.no_latest:
+        print(f"Updated latest pointer: {latest_output_arg}")
     print(f"Recommendations: {len(recommendations)}")
     print(f"Evidence: {len(evidence)}")
     return 0

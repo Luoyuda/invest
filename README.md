@@ -25,7 +25,7 @@ https://github.com/Luoyuda/invest.git
 - A 股持仓复盘 Skill
 - A 股候选观察池跟踪 Skill
 - 共享 reference：数据源策略、资金流口径、证据包 schema、板块状态账本、推荐 run schema、skill 质量评分表
-- 运行态产物规范：`runtime/sector-state.latest.json`、`runtime/recommendation-runs/latest.json`、`runtime/feedback-log.jsonl`、`runtime/task-runs/*.latest.json`
+- 运行态产物规范：`runtime/sector-state.latest.json`、`runtime/recommendation-runs/<YYYY-MM-DD>/<session-id>/<run-id>.json`、`runtime/feedback-log.jsonl`、`runtime/task-runs/*.latest.json`
 - 三角色自我迭代体系
 - 安装脚本
 - 推荐 run 硬规则校验脚本
