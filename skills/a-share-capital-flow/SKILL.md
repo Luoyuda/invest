@@ -30,7 +30,7 @@ description: Use this skill when the user asks to分析A股资金流向、主力
 
 | 用户问题 | 重点 |
 |---|---|
-| “大盘资金流怎么样” | 同花顺行业资金与概念资金方向，净流入/净流出前列 |
+| “大盘资金流怎么样” | iFinD 返回的行业资金与概念资金方向，净流入/净流出前列 |
 | “资金流怎么样” | 当日、3/5/10/20 日主力净流入趋势 |
 | “主力是不是在流入” | 主力净流入、超大单/大单分解、成交额和价格位置 |
 | “为什么涨跌” | 资金与价格、成交额、板块催化是否一致 |
@@ -56,11 +56,11 @@ python3 scripts/fetch_capital_flow.py 300308 601899 688981 --days 20 --output ru
 大盘资金：
 
 ```bash
-python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50 --output runtime/capital-flow.latest.json
+python3 scripts/fetch_capital_flow.py --scope market --provider ifind --limit 50 --output runtime/capital-flow.latest.json
 ```
 
-脚本当前默认 `--provider auto`：东方财富提供 3/5/10/20 日净流入趋势，同花顺补充实时总流入/总流出和大/中/小单拆分。同花顺属于 S4 可选增强源，失败时必须降级，不得阻断任务。
-大盘资金当前使用同花顺行业资金和概念资金公开页，输出资金偏好的行业/主题方向；不得写成全市场精确总额。
+交互式 agent 优先使用 iFinD skill。CLI/定时任务使用 `scripts/fetch_capital_flow.py` 通过 iFinD MCP 兜底；不得使用东方财富、同花顺公开网页、RSS、搜索 API 或第三方 SDK 作为资金流来源。
+大盘资金输出 iFinD 返回的行业/主题资金方向；未取得明确总额时，不得写成全市场精确总额。
 
 ## Step 3: 必须输出的字段
 
@@ -69,7 +69,7 @@ python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50 -
 - 标的：名称、代码、交易所。
 - 数据时间：当日或最近可核验交易日。
 - 当日主力净流入：单位亿元。
-- 若同花顺实时字段可用，输出总流入、总流出、净额；若不可用，不得反推。
+- 若 iFinD 返回总流入、总流出，输出总流入、总流出、净额；若不可用，不得反推。
 - 超大单/大单/中单/小单净流入分解：单位亿元。
 - 3 日、5 日、10 日、20 日主力净流入合计。
 - 来源、接口/页面、访问时间、限制。
@@ -117,7 +117,7 @@ python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50 -
 | 情况 | 处理 |
 |---|---|
 | 资金接口失败 | 明确“资金面未取得可靠结构化数据”，不补编 |
-| 同花顺接口失败 | 保留东方财富趋势数据，标注实时流入/流出未取得 |
+| iFinD skill 失败 | 改用 iFinD MCP；若 MCP 也失败，标注资金面未取得可靠结构化数据 |
 | 大盘资金没有总额 | 只写行业/概念资金方向，不得冒充全市场总额 |
 | 只有净流入，没有流入/流出总额 | 只写净流入，不反推总额 |
 | 多来源冲突 | 标注来源差异，优先官方/更稳定/更新来源 |

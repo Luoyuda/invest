@@ -35,7 +35,7 @@ https://github.com/Luoyuda/invest.git
 - outbox 消息落盘脚本：发送前校验格式，IM 投递失败不影响上游任务状态
 - 连通性检查脚本：一键验证包结构、行情、板块和新闻搜索是否可用
 - 最终回答格式校验脚本：限制 Markdown 表格数量，避免触发 IM API 限制
-- 多源 provider registry：新浪/腾讯快速行情交叉校验，东方财富/同花顺资金流，东方财富/搜狐板块适配，adata/AKShare 可选适配
+- iFinD 数据源路由：交互式查询优先 iFinD skill，CLI/定时任务和 skill 未覆盖能力使用 iFinD MCP/mcporter，禁止回退到未保证的网页抓取来源
 - 固定 fixtures 和 smoke test，用于验证正反例与完整本地链路
 - 小龙虾读取仓库后的启动 Prompt
 

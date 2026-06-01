@@ -51,13 +51,13 @@
 
 辅助脚本：
 
-- `scripts/fetch_a_share_data.py`：多源获取行情，默认东方财富主源、腾讯交叉校验。
-- `scripts/fetch_capital_flow.py`：获取个股资金流，默认东方财富趋势 + 同花顺实时流入/流出可选增强。
-- `scripts/fetch_sector_boards.py`：获取东方财富/搜狐板块快照，或在安装 AKShare/adata 时获取补充板块快照。
+- `scripts/fetch_a_share_data.py`：通过 iFinD MCP 获取行情；交互式 agent 优先用 iFinD skill。
+- `scripts/fetch_capital_flow.py`：通过 iFinD MCP 获取资金流；交互式 agent 优先用 iFinD skill。
+- `scripts/fetch_sector_boards.py`：通过 iFinD MCP 获取板块快照；交互式 agent 优先用 iFinD skill。
 - `scripts/run_task.py`：所有 cron 建议统一套用的任务运行器，负责运行锁、总超时、重试、最近成功兜底和健康报告。
 - `scripts/refresh_sector_state.py`：高频或定时任务应优先使用的板块状态刷新入口；内置运行锁、分段超时、缓存兜底，刷新产物与消息发送解耦。
 - `scripts/write_outbox_message.py`：把最终消息先写入 outbox 并校验表格数量，IM 投递失败不应影响上游任务状态。
-- `scripts/search_news.py`：A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底，Tavily 为可选 API key 源。
+- `scripts/search_news.py`：通过 iFinD MCP 获取公告资讯；交互式 agent 优先用 iFinD skill。
 - `scripts/build_sector_metrics.py`：从 CSV/导出数据构建板块指标输入。
 - `scripts/generate_sector_state.py`：生成运行态板块状态。
 - `scripts/collect_catalysts.py`：收集公告、政策、产业催化记录。

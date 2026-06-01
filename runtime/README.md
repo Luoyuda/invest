@@ -130,13 +130,14 @@ runtime/outbox/pending/*.json
 仓库提供以下 V1 工具：
 
 ```text
-scripts/fetch_a_share_data.py          # 多源获取 A 股行情，默认新浪+腾讯快路径，可选东方财富/adata
-scripts/fetch_capital_flow.py          # 个股资金流，默认东方财富趋势 + 同花顺实时流入/流出可选增强
-scripts/fetch_sector_boards.py         # 获取东方财富/搜狐/可选 adata/AKShare 板块快照，空结果默认降级不阻断
+scripts/ifind_mcp.py                   # iFinD MCP/mcporter 兜底调用器；交互式 agent 优先 iFinD skill
+scripts/fetch_a_share_data.py          # 通过 iFinD MCP 获取 A 股行情，不回退到免费网页源
+scripts/fetch_capital_flow.py          # 通过 iFinD MCP 获取个股/市场资金流，不回退到公开网页源
+scripts/fetch_sector_boards.py         # 通过 iFinD MCP 获取行业/概念板块快照，不回退到第三方 SDK
 scripts/run_task.py                    # cron 通用运行器：锁、总超时、重试、健康报告、最近成功兜底
 scripts/check_connectivity.py          # 一键检查包结构、行情、概念/行业板块、新闻搜索连通性
 scripts/write_outbox_message.py        # 只写待发送消息产物，不直接调用 IM API；发送前校验表格数量
-scripts/search_news.py                 # A 股定向新闻检索，默认站点定向 RSS + 财经首页兜底
+scripts/search_news.py                 # A 股定向新闻检索：通过 iFinD MCP 获取公告资讯，不回退到 RSS/搜索 API
 scripts/build_sector_metrics.py        # 从 CSV/导出数据构建板块指标输入
 scripts/refresh_sector_state.py        # 有锁、有超时、有缓存兜底地刷新板块状态
 scripts/generate_sector_state.py       # 从板块指标生成 sector-state.latest.json
@@ -163,28 +164,27 @@ python3 scripts/check_connectivity.py \
   --text-output runtime/connectivity-check.latest.txt
 ```
 
-检查项包括包结构、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
+检查项包括包结构、iFinD MCP 配置、默认行情源、概念板块、行业板块和新闻搜索。任一必需项失败时命令返回非 0。
 
 资金流检查：
 
 ```bash
-python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20 --output runtime/capital-flow.latest.json
+python3 scripts/fetch_capital_flow.py 300308 --provider ifind --days 20 --output runtime/capital-flow.latest.json
 ```
 
-默认 `auto` 会先取东方财富 20 日主力净流入趋势，再尝试同花顺实时总流入/总流出和大/中/小单拆分。同花顺失败时应降级保留东方财富趋势，不阻断定时任务。
+交互式 agent 优先使用 iFinD skill；CLI/定时任务使用 iFinD MCP。iFinD 不可用时必须失败并记录缺失，不得回退到东方财富、同花顺公开网页或第三方 SDK。
 
 大盘资金方向：
 
 ```bash
 python3 scripts/fetch_capital_flow.py \
   --scope market \
-  --provider ths \
+  --provider ifind \
   --limit 50 \
   --output runtime/capital-flow.latest.json
 ```
 
-该模式读取同花顺沪深两市个股资金流向排行公开页，输出样本合计、净流入前列和净流出前列。默认不得把样本合计写成全市场精确总额。
-该模式实际使用同花顺行业资金与概念资金页的公开 `JS_DATA`，输出资金净流入/净流出靠前的行业和主题。它不是全市场精确资金总额，不得写成“大盘净流入/净流出 X 亿”。
+该模式通过 iFinD MCP 查询行业/概念资金方向。若 iFinD 返回内容没有明确全市场总额，不得写成“大盘净流入/净流出 X 亿”。
 
 cron 任务建议统一套一层运行器，避免任务超时后拖垮后续流程：
 

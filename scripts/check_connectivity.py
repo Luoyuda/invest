@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run repeatable connectivity checks for A-share runtime providers."""
+"""Run repeatable connectivity checks for iFinD-backed A-share runtime providers."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ def check_quotes(tmpdir: Path) -> dict[str, Any]:
     provider_ok = []
     for quote in quotes:
         provider_ok.extend(
-            item.get("status") == "ok" for item in quote.get("provider_results", []) if item.get("provider") in {"sina", "tencent"}
+            item.get("status") == "ok" for item in quote.get("provider_results", []) if item.get("provider") == "ifind"
         )
     passed = command["exit_code"] == 0 and len(quotes) >= 2 and provider_ok and all(provider_ok)
     return {
@@ -106,7 +106,7 @@ def check_capital_flow(tmpdir: Path) -> dict[str, Any]:
     output = tmpdir / "capital-flow.json"
     command = run_command(
         "fetch_capital_flow",
-        ["python3", "scripts/fetch_capital_flow.py", "300308", "--provider", "auto", "--days", "20", "--output", str(output)],
+        ["python3", "scripts/fetch_capital_flow.py", "300308", "--provider", "ifind", "--days", "20", "--output", str(output)],
         timeout_sec=25,
     )
     payload = load_json(output)
@@ -129,7 +129,7 @@ def check_sector(tmpdir: Path, kind: str) -> dict[str, Any]:
     output = tmpdir / f"sector-{kind}.json"
     command = run_command(
         f"fetch_sector_boards_{kind}",
-        ["python3", "scripts/fetch_sector_boards.py", "--provider", "auto", "--kind", kind, "--limit", "5", "--output", str(output)],
+        ["python3", "scripts/fetch_sector_boards.py", "--provider", "ifind", "--kind", kind, "--limit", "5", "--output", str(output)],
         timeout_sec=25,
     )
     payload = load_json(output)
