@@ -1,373 +1,81 @@
 #!/usr/bin/env python3
-"""Fetch A-share sector board snapshots from Eastmoney or optional SDKs.
+"""Fetch A-share sector board snapshots from licensed iFinD data only.
 
-Eastmoney public endpoints are used as the dependency-free default. Tonghuashun
-board data is routed through AKShare when installed, because there is no stable
-free official Tonghuashun API contract suitable for direct hard-coding here.
-adata can also be enabled as an optional Apache-2.0 SDK provider for Eastmoney
-and Tonghuashun concept board snapshots.
+Interactive agents should call the iFinD skill first. This CLI uses iFinD MCP as
+the fallback path for automation and skill gaps.
 """
 
 from __future__ import annotations
 
 import argparse
-import ast
 import json
-import re
 import sys
-import time
-import urllib.parse
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-
-EASTMONEY_BOARD_KINDS = {
-    "industry": "m:90+t:2",
-    "concept": "m:90+t:3",
-}
-
-SOHU_BOARD_IDS = {
-    "industry": "1631",
-    "concept": "1630",
-}
+from ifind_mcp import call_ifind
 
 
-def fetch_json(url: str, params: dict[str, str], timeout: int = 12, retries: int = 2) -> dict[str, Any]:
-    request = urllib.request.Request(
-        f"{url}?{urllib.parse.urlencode(params)}",
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) lobster-invest/1.0",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Referer": "https://quote.eastmoney.com/center/boardlist.html",
-            "Connection": "close",
-        },
-    )
-    last_exc: Exception | None = None
-    for attempt in range(retries + 1):
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                return json.loads(response.read().decode("utf-8"))
-        except Exception as exc:  # noqa: BLE001 - provider diagnostics must retain original failure
-            last_exc = exc
-            if attempt < retries:
-                time.sleep(0.3 * (attempt + 1))
-    assert last_exc is not None
-    raise last_exc
-
-
-def fetch_text(url: str, timeout: int = 8, retries: int = 1) -> str:
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) lobster-invest/1.0",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Referer": "https://q.stock.sohu.com/cn/bk.shtml",
-            "Connection": "close",
-        },
-    )
-    last_exc: Exception | None = None
-    for attempt in range(retries + 1):
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                raw = response.read()
-                content_type = (response.headers.get("Content-Type") or "").lower()
-                encoding = "gbk" if "gbk" in content_type or "gb2312" in content_type else "utf-8"
-                return raw.decode(encoding, "ignore")
-        except Exception as exc:  # noqa: BLE001 - provider diagnostics must retain original failure
-            last_exc = exc
-            if attempt < retries:
-                time.sleep(0.3 * (attempt + 1))
-    assert last_exc is not None
-    raise last_exc
-
-
-def normalize_number(value: Any) -> float | int | str | None:
-    if value in (None, "-", ""):
-        return None
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        return str(value)
-    if number.is_integer():
-        return int(number)
-    return round(number, 4)
-
-
-def parse_percent(value: Any) -> float | int | str | None:
-    if isinstance(value, str):
-        value = value.strip().rstrip("%")
-    return normalize_number(value)
-
-
-def fetch_eastmoney_boards(kind: str, limit: int) -> dict[str, Any]:
-    fs = EASTMONEY_BOARD_KINDS[kind]
-    fields = "f12,f14,f3,f4,f6,f20,f62,f104,f105,f128,f136,f152"
-    payload = fetch_json(
-        "https://push2.eastmoney.com/api/qt/clist/get",
-        {
-            "pn": "1",
-            "pz": str(limit),
-            "po": "1",
-            "np": "1",
-            "fltt": "2",
-            "invt": "2",
-            "fid": "f3",
-            "fs": fs,
-            "fields": fields,
-        },
-    )
-    diff = ((payload.get("data") or {}).get("diff")) or []
-    boards = []
-    for item in diff:
-        boards.append(
+def fetch_ifind_boards(kind: str, limit: int, timeout: float, config: str | None) -> dict[str, Any]:
+    kind_name = "行业" if kind == "industry" else "概念"
+    query = f"A股{kind_name}板块 涨跌幅 成交额 主力资金 领涨股 排名前{limit}"
+    result = call_ifind("hexin-ifind-stock.search_stocks", query, timeout=timeout, config=config)
+    return {
+        "provider": "ifind",
+        "kind": kind,
+        "status": "passed",
+        "warnings": [],
+        "source": result["source"],
+        "boards": [
             {
-                "board_code": item.get("f12"),
-                "name": item.get("f14"),
-                "pct_change": normalize_number(item.get("f3")),
-                "change": normalize_number(item.get("f4")),
-                "turnover": normalize_number(item.get("f6")),
-                "market_value": normalize_number(item.get("f20")),
-                "main_net_inflow": normalize_number(item.get("f62")),
-                "rise_count": normalize_number(item.get("f104")),
-                "fall_count": normalize_number(item.get("f105")),
-                "leading_stock": item.get("f128"),
-                "leading_stock_pct_change": normalize_number(item.get("f136")),
+                "board_code": None,
+                "name": f"iFinD {kind_name}板块查询",
+                "pct_change": None,
+                "change": None,
+                "turnover": None,
+                "market_value": None,
+                "main_net_inflow": None,
+                "rise_count": None,
+                "fall_count": None,
+                "leading_stock": None,
+                "leading_stock_pct_change": None,
+                "raw_response": result["data"],
+                "raw_stdout": result["stdout"],
             }
-        )
-    status = "passed" if boards else "degraded"
-    warnings = [] if boards else ["eastmoney board endpoint returned empty board list"]
-    return {
-        "provider": "eastmoney",
-        "kind": kind,
-        "status": status,
-        "warnings": warnings,
-        "source": {
-            "source_name": "东方财富",
-            "source_type": "sector_board",
-            "stability_tier": "S3",
-            "url": "https://push2.eastmoney.com/api/qt/clist/get",
-            "accessed_at": datetime.now().astimezone().isoformat(),
-            "limitations": "公开网页板块接口，参数和字段可能变化；用于板块热度初筛，关键结论需交叉校验。",
-        },
-        "boards": boards,
+        ],
+        "tool": result["tool"],
+        "query": result["query"],
     }
-
-
-def fetch_akshare_ths_boards(kind: str, limit: int) -> dict[str, Any]:
-    try:
-        import akshare as ak  # type: ignore[import-not-found]
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError("akshare is not installed; cannot fetch Tonghuashun boards") from exc
-
-    if kind == "industry":
-        frame = ak.stock_board_industry_name_ths()
-    elif kind == "concept":
-        frame = ak.stock_board_concept_name_ths()
-    else:
-        raise ValueError(f"unsupported Tonghuashun board kind: {kind}")
-
-    records = frame.head(limit).to_dict(orient="records")
-    status = "passed" if records else "degraded"
-    warnings = [] if records else ["akshare_ths returned empty board list"]
-    return {
-        "provider": "akshare_ths",
-        "kind": kind,
-        "status": status,
-        "warnings": warnings,
-        "source": {
-            "source_name": "AKShare-同花顺",
-            "source_type": "sector_board",
-            "stability_tier": "S3",
-            "url": "https://akshare.akfamily.xyz/",
-            "accessed_at": datetime.now().astimezone().isoformat(),
-            "limitations": "通过 AKShare 封装同花顺数据；字段依赖上游网页结构，不视为官方稳定接口。",
-        },
-        "boards": records,
-    }
-
-
-def fetch_sohu_boards(kind: str, limit: int) -> dict[str, Any]:
-    board_id = SOHU_BOARD_IDS[kind]
-    url = f"https://q.stock.sohu.com/pl/pl-{board_id}.html"
-    text = fetch_text(url)
-    match = re.search(r"PEAK_ODIA\((\[.*\])\)", text, re.S)
-    if not match:
-        raise RuntimeError(f"unexpected Sohu board response for {kind}")
-    payload = ast.literal_eval(match.group(1))
-    if not payload or payload[0] != "pllist":
-        raise RuntimeError(f"incomplete Sohu board response for {kind}")
-
-    boards = []
-    for item in payload[1 : limit + 1]:
-        if not isinstance(item, list) or len(item) < 13:
-            continue
-        boards.append(
-            {
-                "board_code": item[0],
-                "name": item[1],
-                "company_count": normalize_number(item[2]),
-                "average_price": normalize_number(item[3]),
-                "change": normalize_number(item[4]),
-                "pct_change": parse_percent(item[5]),
-                "volume": normalize_number(item[6]),
-                "turnover": normalize_number(item[7]),
-                "leading_stock_code": str(item[8]).replace("cn_", ""),
-                "leading_stock": item[9],
-                "leading_stock_price": normalize_number(item[10]),
-                "leading_stock_change": normalize_number(item[11]),
-                "leading_stock_pct_change": parse_percent(item[12]),
-            }
-        )
-    status = "passed" if boards else "degraded"
-    warnings = [] if boards else ["sohu board endpoint returned empty board list"]
-    return {
-        "provider": "sohu",
-        "kind": kind,
-        "status": status,
-        "warnings": warnings,
-        "source": {
-            "source_name": "搜狐证券",
-            "source_type": "sector_board",
-            "stability_tier": "S4",
-            "url": url,
-            "accessed_at": datetime.now().astimezone().isoformat(),
-            "limitations": "公开网页异步板块接口，无官方稳定承诺；用于东方财富/SDK 不可用时的实时兜底，关键结论需交叉校验。",
-        },
-        "boards": boards,
-    }
-
-
-def first_present(row: dict[str, Any], names: list[str]) -> Any:
-    for name in names:
-        if name in row and row[name] not in (None, "", "-"):
-            return row[name]
-    return None
-
-
-def json_safe(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {str(key): json_safe(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [json_safe(item) for item in value]
-    if isinstance(value, tuple):
-        return [json_safe(item) for item in value]
-    if hasattr(value, "isoformat"):
-        try:
-            return value.isoformat()
-        except Exception:  # noqa: BLE001 - best-effort serialization for provider raw fields
-            return str(value)
-    if hasattr(value, "item"):
-        try:
-            return value.item()
-        except Exception:  # noqa: BLE001
-            return str(value)
-    return value
-
-
-def normalize_adata_board_row(row: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "board_code": first_present(row, ["concept_code", "plate_code", "code", "板块代码", "概念代码"]),
-        "name": first_present(row, ["concept_name", "plate_name", "name", "板块名称", "概念名称", "名称"]),
-        "pct_change": normalize_number(first_present(row, ["change_pct", "涨跌幅", "increase", "pct_change"])),
-        "change": normalize_number(first_present(row, ["change", "涨跌额", "涨跌"])),
-        "turnover": normalize_number(first_present(row, ["amount", "turnover", "成交额"])),
-        "market_value": normalize_number(first_present(row, ["market_value", "总市值"])),
-        "main_net_inflow": normalize_number(first_present(row, ["main_net_inflow", "主力净流入"])),
-        "rise_count": normalize_number(first_present(row, ["rise_count", "上涨家数"])),
-        "fall_count": normalize_number(first_present(row, ["fall_count", "下跌家数"])),
-        "leading_stock": first_present(row, ["leader_stock", "leading_stock", "领涨股"]),
-        "leading_stock_pct_change": normalize_number(first_present(row, ["leader_stock_pct", "leading_stock_pct_change", "领涨股涨跌幅"])),
-        "raw_fields": json_safe(row),
-    }
-
-
-def fetch_adata_boards(provider: str, kind: str, limit: int) -> dict[str, Any]:
-    try:
-        import adata  # type: ignore[import-not-found]
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError("adata is not installed; run `python3 -m pip install -U adata` to enable this provider") from exc
-
-    if kind != "concept":
-        raise ValueError("adata board providers currently support concept boards only")
-    if provider == "adata_east":
-        frame = adata.stock.market.get_market_concept_current_east()
-        source_name = "adata-东方财富概念"
-    elif provider == "adata_ths":
-        frame = adata.stock.market.get_market_concept_current_ths()
-        source_name = "adata-同花顺概念"
-    else:
-        raise ValueError(f"unknown adata board provider: {provider}")
-
-    records = [] if frame is None or getattr(frame, "empty", True) else frame.head(limit).to_dict(orient="records")
-    boards = [normalize_adata_board_row(item) for item in records]
-    status = "passed" if boards else "degraded"
-    warnings = [] if boards else [f"{provider} returned empty board list"]
-    return {
-        "provider": provider,
-        "kind": kind,
-        "status": status,
-        "warnings": warnings,
-        "source": {
-            "source_name": source_name,
-            "source_type": "sector_board",
-            "stability_tier": "S2",
-            "url": "https://github.com/1nchaos/adata",
-            "accessed_at": datetime.now().astimezone().isoformat(),
-            "limitations": "Apache-2.0 开源 SDK，多数据源封装；底层仍可能依赖公开网页结构，关键结论需交叉校验。",
-        },
-        "boards": boards,
-    }
-
-
-def fetch_provider(provider: str, kind: str, limit: int) -> dict[str, Any]:
-    if provider == "eastmoney":
-        return fetch_eastmoney_boards(kind, limit)
-    if provider == "akshare_ths":
-        return fetch_akshare_ths_boards(kind, limit)
-    if provider == "sohu":
-        return fetch_sohu_boards(kind, limit)
-    if provider in {"adata_east", "adata_ths"}:
-        return fetch_adata_boards(provider, kind, limit)
-    raise ValueError(f"unknown sector board provider: {provider}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fetch A-share sector board snapshots")
-    parser.add_argument("--provider", choices=["auto", "eastmoney", "sohu", "akshare_ths", "adata_east", "adata_ths"], default="auto")
+    parser = argparse.ArgumentParser(description="Fetch A-share sector board snapshots through iFinD MCP")
+    parser.add_argument("--provider", choices=["ifind"], default="ifind")
     parser.add_argument("--kind", choices=["industry", "concept"], default="concept")
     parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--timeout", type=float, default=30.0)
+    parser.add_argument("--config", default=None)
     parser.add_argument("--output", "-o", default="runtime/market-data/sector-boards.latest.json")
     parser.add_argument("--require-results", action="store_true", help="Exit non-zero when no board data is available")
     args = parser.parse_args()
 
     errors: list[dict[str, str]] = []
-    attempts = ["adata_east", "eastmoney", "sohu", "akshare_ths"] if args.provider == "auto" else [args.provider]
-    payload: dict[str, Any] | None = None
-    for provider in attempts:
-        try:
-            candidate = fetch_provider(provider, args.kind, args.limit)
-            if candidate.get("boards"):
-                payload = candidate
-                break
-            errors.append({"provider": provider, "error": "empty board list"})
-            payload = payload or candidate
-        except Exception as exc:  # noqa: BLE001 - command-line diagnostics
-            errors.append({"provider": provider, "error": str(exc)})
-    if payload is None:
+    try:
+        payload = fetch_ifind_boards(args.kind, args.limit, args.timeout, args.config)
+    except Exception as exc:  # noqa: BLE001 - command-line diagnostics
+        errors.append({"provider": "ifind", "error": str(exc)})
         payload = {
-            "provider": args.provider,
+            "provider": "ifind",
             "kind": args.kind,
             "status": "failed",
-            "warnings": ["all sector board providers failed"],
+            "warnings": ["iFinD MCP sector board query failed"],
             "boards": [],
         }
 
     payload["generated_at"] = datetime.now().astimezone().isoformat()
     payload["errors"] = errors
+    payload["source_policy"] = "Licensed iFinD data only: use iFinD skill first when available, otherwise iFinD MCP for automation/gaps. No Eastmoney/Sohu/AKShare/adata fallback is permitted."
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -379,7 +87,7 @@ def main() -> int:
         print(f"Errors: {len(errors)}", file=sys.stderr)
     if args.require_results and not payload.get("boards"):
         return 2
-    return 0
+    return 0 if payload.get("boards") else 2
 
 
 if __name__ == "__main__":

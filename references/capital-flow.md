@@ -6,9 +6,9 @@
 
 | 资金类型 | 首选来源 | 可用补充 | 要求 |
 |---|---|---|---|
-| 主力资金流 | 东方财富资金流、同花顺资金流、可授权数据源 | 财联社/证券时报报道 | 必须写统计日期、净流入/流入/流出单位和订单口径 |
-| 北向/沪深港通 | 交易所/港交所公开数据、沪深港通页面 | 东方财富/同花顺汇总 | 必须区分北向总额、个股持股变化、行业汇总 |
-| 融资融券 | 交易所融资融券数据 | 东方财富/同花顺汇总 | 必须写交易日和余额/买入额/偿还额 |
+| 主力资金流 | iFinD skill / iFinD MCP | 交易所/港交所原始数据 | 必须写统计日期、净流入/流入/流出单位和订单口径 |
+| 北向/沪深港通 | iFinD skill / iFinD MCP、交易所/港交所公开数据 | 交易所/港交所原始数据 | 必须区分北向总额、个股持股变化、行业汇总 |
+| 融资融券 | iFinD skill / iFinD MCP、交易所融资融券数据 | 交易所原始数据 | 必须写交易日和余额/买入额/偿还额 |
 | 龙虎榜 | 交易所龙虎榜原始披露 | 财经平台整理 | 必须写上榜日期、席位、买卖金额 |
 | ETF/产业资本 | 基金公告、交易所、上市公司公告 | 主流财经媒体 | 必须写份额/金额/公告时间 |
 
@@ -20,7 +20,7 @@
 {
   "code": "300308",
   "name": "中际旭创",
-  "provider": "eastmoney",
+  "provider": "ifind",
   "data_time": "2026-05-15",
   "latest": {
     "main_net_inflow_yi": -7.113,
@@ -53,16 +53,13 @@
 
 | Provider | 用途 | 稳定性 | 说明 |
 |---|---|---|---|
-| `eastmoney` | 个股 3/5/10/20 日主力净流入趋势 | S3 | 默认趋势源；提供净流入和超大/大/中/小单净额 |
-| `ths` | 同花顺个股实时资金流入/流出和大/中/小单拆分 | S4 | 可选增强源；公开网页服务接口，可能受 cookie、Referer、反爬影响 |
-| `auto` | 东方财富趋势 + 同花顺实时字段 | S3/S4 | 默认模式；同花顺失败时保留东方财富趋势并降级 |
-| `ths --scope market` | 同花顺行业/概念资金方向 | S4 | 用于观察大盘资金流向偏好的行业和主题；不提供全市场精确总额 |
+| `ifind` | 个股/市场资金流、行业/概念资金方向 | S2 | 交互式 agent 优先使用 iFinD skill；CLI/定时任务使用 iFinD MCP 兜底 |
 
 脚本入口：
 
 ```bash
-python3 scripts/fetch_capital_flow.py 300308 --provider auto --days 20
-python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50
+python3 scripts/fetch_capital_flow.py 300308 --provider ifind --days 20
+python3 scripts/fetch_capital_flow.py --scope market --provider ifind --limit 50
 ```
 
 ## 3. 解读规则
@@ -81,7 +78,7 @@ python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50
 - 推荐前 5 的标的如果资金流为明显连续净流出，必须降低确定性或写入风险。
 - 热门板块如果只有价格热度、没有资金验证，必须标注“资金面未核验”。
 - 资金流端点失败时，不得补编“资金流入/流出”；应写“资金面未取得可靠结构化数据”。
-- `--scope market` 输出的是行业/概念资金方向，不是全市场资金总流入、总流出或净额。
+- `--scope market` 输出的是 iFinD 返回的行业/概念资金方向；没有明确总额时，不得写成全市场资金总流入、总流出或净额。
 
 ## 5. 质量清单
 
@@ -89,5 +86,5 @@ python3 scripts/fetch_capital_flow.py --scope market --provider ths --limit 50
 - 是否区分当日、3 日、5 日、10 日、20 日。
 - 是否保留原始净流入字段和单位换算。
 - 是否避免把净流入反推成完整流入/流出总额。
-- 同花顺实时字段失败时是否降级，而不是阻断定时任务。
+- iFinD skill 不可用时是否明确切换到 iFinD MCP；skill 和 MCP 都不可用时是否停止并标注缺失。
 - 是否说明资金流不能单独构成买卖建议。

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06-01
+
+### iFinD skill 优先数据源
+
+- 将运行时数据源收敛为 iFinD：交互式 agent 优先使用 iFinD skill，CLI/定时任务和 skill 未覆盖能力使用 iFinD MCP/mcporter 兜底。
+- 新增 `scripts/ifind_mcp.py`，统一封装 `mcporter --config ~/.openclaw/mcporter.json call ...`，并保留工具名、查询语句、访问时间和原始返回。
+- `fetch_a_share_data.py`、`fetch_capital_flow.py`、`fetch_sector_boards.py`、`search_news.py` 只允许 `ifind` provider；传入旧 provider 会直接失败。
+- 禁止回退到新浪、腾讯、东方财富、搜狐、AKShare、adata、RSS、Tavily、Google News 等未保证来源。
+
 ## 2026-05-19
 
 ### 个股推荐风格

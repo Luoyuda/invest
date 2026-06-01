@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build sector metrics input for generate_sector_state.py.
 
-V1 accepts a simple CSV so data can come from AKShare, Eastmoney exports,
-manual tables, or future providers without changing downstream scripts.
+V1 accepts a simple CSV so data can come from iFinD exports, manual tables, or
+future licensed providers without changing downstream scripts.
 """
 
 from __future__ import annotations

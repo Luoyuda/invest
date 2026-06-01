@@ -2,7 +2,7 @@
 """Generate runtime/sector-state.latest.json from sector metrics.
 
 Input is intentionally simple JSON so daily/weekly jobs can feed this script
-from AKShare, Eastmoney exports, CSV conversions, or manual research.
+from iFinD exports, CSV conversions, or manual research.
 """
 
 from __future__ import annotations
